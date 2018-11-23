@@ -18,7 +18,7 @@ class EnvConf:
 def parse_env_vars() -> EnvConf:
     env = os.environ
     return EnvConf(
-        env.get("NAMESPACE", "cbo"),
+        env["NAMESPACE"],
         env.get("MASTER_LABEL", "citus-master"),
         env.get("MASTER_SERVICE", "pg-citus-master"),
         env.get("WORKER_LABEL", "citus-worker"),

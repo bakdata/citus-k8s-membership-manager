@@ -89,6 +89,8 @@ def _configure_manager_container_template(manager_conf: dict) -> None:
     template["serviceAccountName"] = SERVICE_ACCOUNT
     template["containers"][0]["imagePullPolicy"] = "Never"
     template["containers"][0]["image"] = MANAGER_NAME
+    template["containers"][0]["env"] = []
+    template["containers"][0]["env"].append({"name": "NAMESPACE", "value": NAMESPACE})
     manager_conf["spec"]["template"]["spec"] = template
 
 
