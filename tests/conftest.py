@@ -5,9 +5,17 @@ import pytest
 import os
 import subprocess
 import time
+import yaml
 
 from kubernetes import config, client
-from config import NAMESPACE, POD_NAMES, YAML_DIR, MANAGER_DEPLOYMENT
+from config import (
+    NAMESPACE,
+    POD_NAMES,
+    YAML_DIR,
+    MANAGER_DEPLOYMENT,
+    SERVICE_ACCOUNT,
+    MANAGER_NAME,
+)
 
 
 LOCAL = os.environ.get("DEVELOPMENT", True)
@@ -36,7 +44,6 @@ def namespace():
 @pytest.fixture(scope="session")
 def manager_service_account(kubernetes_client, namespace):
     try:
-        name = "pod-listing-sa"
         path = YAML_DIR + "pods-list-role-binding.yaml"
 
         def create_role_binding() -> None:
@@ -46,7 +53,9 @@ def manager_service_account(kubernetes_client, namespace):
         yield create_role_binding()
     finally:
         body = client.V1DeleteOptions()
-        client.CoreV1Api().delete_namespaced_service_account(name, NAMESPACE, body)
+        client.CoreV1Api().delete_namespaced_service_account(
+            SERVICE_ACCOUNT, NAMESPACE, body
+        )
         client.RbacAuthorizationV1Api().delete_cluster_role("pods-list", body)
         client.RbacAuthorizationV1Api().delete_cluster_role_binding("pods-list", body)
 
@@ -60,15 +69,27 @@ def kubernetes_client():
 @pytest.fixture(scope="session", autouse=True)
 def setup_cluster(kubernetes_client, manager_service_account):
     try:
-        citus_worker = YAML_DIR + "citus-worker.yaml"
+        manager_conf = _parse_single_kubernetes_yaml(MANAGER_DEPLOYMENT)
+        _configure_manager_container_template(manager_conf)
+        kubernetes_client.create_namespaced_deployment(NAMESPACE, manager_conf)
+
         citus_master = YAML_DIR + "citus-master.yaml"
-        _create_deployments(MANAGER_DEPLOYMENT)
         _create_deployments(citus_master)
         log.info("Wait until master is running")
         time.sleep(3)  # TODO: wait until at least one master is running
+
+        citus_worker = YAML_DIR + "citus-worker.yaml"
         yield _create_deployments(citus_worker)
     finally:
         _cleanup(kubernetes_client)
+
+
+def _configure_manager_container_template(manager_conf: dict) -> None:
+    template = manager_conf["spec"]["template"]["spec"]
+    template["serviceAccountName"] = SERVICE_ACCOUNT
+    template["containers"][0]["imagePullPolicy"] = "Never"
+    template["containers"][0]["image"] = MANAGER_NAME
+    manager_conf["spec"]["template"]["spec"] = template
 
 
 # TODO: Next kubernetes python API release might allow multiple object creation for a
@@ -79,6 +100,11 @@ def _create_deployments(file_path: str) -> typing.Tuple[int, str, str]:
     if LOCAL:
         cmd = "eval $(minikube docker-env) && " + cmd
     return _run_kubectl_command(cmd)
+
+
+def _parse_single_kubernetes_yaml(file_path: str) -> dict:
+    with open(file_path, "r") as f:
+        return yaml.load(f)
 
 
 def _set_context_namespace(namespace: str) -> typing.Tuple[int, str, str]:
