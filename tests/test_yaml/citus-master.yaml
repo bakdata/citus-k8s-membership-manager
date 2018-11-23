@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pg-citus-master
+  labels:
+    app: citus-master
+spec:
+  ports:
+  - port: 5432
+    name: psql
+  clusterIP: None
+  selector:
+    app: citus-master
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pg-citus-master
+spec:
+  serviceName: "pg-citus-master"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: citus-master
+  template:
+    metadata:
+      labels:
+        app: citus-master
+        citusType: "citus-master"
+    spec:
+      containers:
+      - name: citus-master
+        image: citusdata/citus:7.5.1
+        resources:
+          requests:
+            cpu: 500m
+            memory: 500Mi
+          limits:
+            cpu: 4
+            memory: 8Gi
+        ports:
+        - containerPort: 5432
+          name: psql
