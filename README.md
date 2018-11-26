@@ -33,6 +33,11 @@ roleRef:
 
 ```
 
+Finally to deploy the membership-manager with `kubectl create -f manager-deployment.yaml` you have to edit the yaml file replacing the template variables (`<your-service-account>`, `<your-namespace>`) with the corresponding names in your setup.
+
+
+### GKE
+
 If you want to do the same on Google's Kubernetes Engine you might have to create a cluster admin binding first which sets your current google user as cluster admin
 
 ```shell
