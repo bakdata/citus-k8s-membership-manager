@@ -17,6 +17,7 @@ from config import (
     MANAGER_NAME,
 )
 
+VM_DRIVER = os.environ.get("DRIVER", None)
 
 logging.basicConfig(
     format="[%(asctime)s|%(name)s-%(funcName)s(%(lineno)d)|%(levelname)s]: %(message)s",
@@ -96,8 +97,9 @@ def _configure_manager_container_template(manager_conf: dict) -> None:
 # single file (https://github.com/kubernetes-client/python/pull/673). Until it is a
 # stable release we invoke `kubectl` directly.`
 def _create_deployments(file_path: str) -> typing.Tuple[int, str, str]:
-    kube_cmd = "kubectl create -f {}".format(file_path)
-    cmd = "eval $(minikube docker-env) && " + kube_cmd
+    cmd = "kubectl create -f {}".format(file_path)
+    if not VM_DRIVER:
+        cmd = "eval $(minikube docker-env) && " + cmd
     return _run_kubectl_command(cmd)
 
 
