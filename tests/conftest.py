@@ -98,7 +98,7 @@ def _configure_manager_container_template(manager_conf: dict) -> None:
 # stable release we invoke `kubectl` directly.`
 def _create_deployments(file_path: str) -> typing.Tuple[int, str, str]:
     cmd = "kubectl create -f {}".format(file_path)
-    if not VM_DRIVER:
+    if VM_DRIVER:
         cmd = "eval $(minikube docker-env) && " + cmd
     return _run_kubectl_command(cmd)
 
