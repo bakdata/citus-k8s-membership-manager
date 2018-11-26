@@ -33,7 +33,7 @@ spec:
         image: citusdata/citus:7.5.1
         resources:
           requests:
-            cpu: 500m
+            cpu: 200m 
             memory: 500Mi
           limits:
             cpu: 4
