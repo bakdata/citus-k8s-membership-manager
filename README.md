@@ -54,3 +54,20 @@ The following environment variables are configurable on pod startup. Hereby the 
     int(env.get("PG_PORT", 5432)), # Database port for master node postgres
     env.get("LOG_FILE", "manager.log"), # Log file name created in pod
 ```
+
+## Development
+
+Since the main development for this tool is done in Python we decided to use [black](https://github.com/ambv/black) as formatting tool and [mypy](http://mypy-lang.org/) as type hinting tool. If you want to contribute please install these tools in your favorite IDE or use them as cli tools to keep the code consistent. When you want to make your first changes you can install the needed dependencies with running the following commands in the root directory of the repository.
+
+```shell
+pipenv install --dev
+pipenv shell
+```
+
+To run the tests locally you first have to install [minikube](https://kubernetes.io/docs/setup/minikube/) on your machine. We have tested the following cluster configuration:
+
+```shell
+minikube start --memory 4096 --cpus 4 --vm-driver hyperkit --bootstrapper=kubeadm
+```
+
+Afterward, you can run `pytest`.
