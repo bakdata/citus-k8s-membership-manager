@@ -18,8 +18,6 @@ from config import (
 )
 
 
-LOCAL = os.environ.get("DEVELOPMENT", True)
-
 logging.basicConfig(
     format="[%(asctime)s|%(name)s-%(funcName)s(%(lineno)d)|%(levelname)s]: %(message)s",
     level="INFO",
@@ -98,9 +96,8 @@ def _configure_manager_container_template(manager_conf: dict) -> None:
 # single file (https://github.com/kubernetes-client/python/pull/673). Until it is a
 # stable release we invoke `kubectl` directly.`
 def _create_deployments(file_path: str) -> typing.Tuple[int, str, str]:
-    cmd = "kubectl create -f {}".format(file_path)
-    if LOCAL:
-        cmd = "eval $(minikube docker-env) && " + cmd
+    kube_cmd = "kubectl create -f {}".format(file_path)
+    cmd = "eval $(minikube docker-env) && " + kube_cmd
     return _run_kubectl_command(cmd)
 
 
