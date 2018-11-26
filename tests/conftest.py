@@ -8,6 +8,7 @@ import time
 import yaml
 
 from kubernetes import config, client
+from threading import Thread
 from config import (
     NAMESPACE,
     POD_NAMES,
@@ -70,6 +71,7 @@ def setup_cluster(kubernetes_client, manager_service_account):
     try:
         manager_conf = _parse_single_kubernetes_yaml(MANAGER_DEPLOYMENT)
         _configure_manager_container_template(manager_conf)
+        _capture_manager_output()
         kubernetes_client.create_namespaced_deployment(NAMESPACE, manager_conf)
 
         citus_master = YAML_DIR + "citus-master.yaml"
@@ -101,6 +103,19 @@ def _create_deployments(file_path: str) -> typing.Tuple[int, str, str]:
     if VM_DRIVER:
         cmd = "eval $(minikube docker-env) && " + cmd
     return _run_kubectl_command(cmd)
+
+
+def _capture_manager_output() -> None:
+    cmd = "kubectl logs -lapp=citus-manager --tail 5"
+
+    def run():
+        while True:
+            _run_kubectl_command(cmd)
+            time.sleep(3)
+
+    th = Thread(target=run)
+    th.daemon = True
+    th.start()
 
 
 def _parse_single_kubernetes_yaml(file_path: str) -> dict:
