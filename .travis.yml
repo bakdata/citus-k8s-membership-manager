@@ -8,7 +8,6 @@ env:
 before_install:
 - sudo apt-get update
 - sudo apt-get install socat
-- sudo iptables -I INPUT -p tcp -j ACCEPT
 # Download kubectl, which is a requirement for using minikube.
 - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 # Download minikube.
@@ -18,6 +17,7 @@ before_install:
 - minikube update-context
 # Wait for Kubernetes to be up and ready.
 - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+- sudo iptables -I INPUT -p tcp -j ACCEPT
 
 python:
   - '3.6'
