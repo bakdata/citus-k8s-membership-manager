@@ -5,6 +5,7 @@ dist: xenial
 before_install:
 - sudo apt-get update
 - sudo apt-get install socat
+- sudo mount --make-rshared /
 
 python:
   - '3.6'
