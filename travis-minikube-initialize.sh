@@ -60,3 +60,5 @@ if [ "$KUBE_ADDONS_UP" != "true" ]; then
     exit 1
 fi
 # kube-addons is available for cluster services
+kubectl delete --namespace=kube-system deployment kube-dns
+sleep 30
