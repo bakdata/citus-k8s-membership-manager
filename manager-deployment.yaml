@@ -15,8 +15,8 @@ spec:
       serviceAccountName: <your-service-account> 
       containers:
       - name: citus-manager-container
-        image: citus-manager
-        imagePullPolicy: Never
+        image: bakdata/citus-k8s-membership-manager:latest
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: 100m
