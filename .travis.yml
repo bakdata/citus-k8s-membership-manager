@@ -8,12 +8,13 @@ env:
 before_install:
 - sudo apt-get update
 - sudo apt-get install socat
-- ./travis-minikube-initialize.sh
 
 python:
   - '3.6'
-install:
+
+script: 
+  - ./travis-minikube-initialize.sh
   - 'pip install pipenv'
   - 'pipenv install --dev'
   - 'docker build -t citus-manager .'
-script: 'pipenv run pytest -vv -s'
+  - 'pipenv run pytest -vv -s'
