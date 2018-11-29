@@ -135,8 +135,9 @@ def exec_on_master(query: str, worker_name: str) -> None:
         conn.close()
 
 
-@retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=3)
+@retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=10)
 def connect_to_master(host: str) -> psycopg2._psycopg.connection:
+    log.info("Connecting to db master %s", host)
     conn = psycopg2.connect(
         "dbname={} user={} host={}".format(conf.pg_db, conf.pg_user, host)
     )
