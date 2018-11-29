@@ -12,7 +12,7 @@ python:
 
 script: 
   - ./travis-minikube-initialize.sh
-  - 'pip install pipenv'
   - 'pipenv install --dev'
   - 'docker build -t citus-manager .'
+  - kubectl logs $(kubectl get pods --all-namespaces | grep coredns | awk '{print $2}') -n kube-system
   - 'pipenv run pytest -vv -s'
