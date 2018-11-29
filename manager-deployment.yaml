@@ -1,0 +1,26 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: citus-manager 
+spec:
+  selector:
+    matchLabels:
+      app: citus-manager
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: citus-manager
+    spec:
+      serviceAccountName: <your-service-account> 
+      containers:
+      - name: citus-manager-container
+        image: bakdata/citus-k8s-membership-manager:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: NAMESPACE
+          value: <your-namespace> 

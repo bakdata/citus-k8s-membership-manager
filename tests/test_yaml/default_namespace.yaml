@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: integration-test
+  labels:
+    name: integration-test

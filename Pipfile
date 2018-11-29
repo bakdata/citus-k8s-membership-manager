@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+kubernetes = "*"
+flask = "*"
+retrying = "*"
+"psycopg2-binary" = "*"
+
+[dev-packages]
+mypy = "*"
+black = "==18.9b0"
+pytest = "*"
+
+[requires]
+python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true

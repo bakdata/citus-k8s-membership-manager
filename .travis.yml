@@ -1,0 +1,16 @@
+language: python
+sudo: required
+dist: xenial
+
+before_install:
+- sudo apt-get update
+- sudo apt-get install socat
+
+python:
+  - '3.6'
+
+script: 
+  - ./travis-minikube-initialize.sh
+  - 'pipenv install --dev'
+  - 'docker build -t citus-manager .'
+  - 'pipenv run pytest -vv -s'
