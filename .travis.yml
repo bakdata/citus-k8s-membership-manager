@@ -5,7 +5,6 @@ dist: xenial
 before_install:
 - sudo apt-get update
 - sudo apt-get install socat
-- sudo mount --make-rshared /
 
 python:
   - '3.6'
@@ -14,5 +13,4 @@ script:
   - ./travis-minikube-initialize.sh
   - 'pipenv install --dev'
   - 'docker build -t citus-manager .'
-  - kubectl logs $(kubectl get pods --all-namespaces | grep coredns | awk '{print $2}') -n kube-system
   - 'pipenv run pytest -vv -s'

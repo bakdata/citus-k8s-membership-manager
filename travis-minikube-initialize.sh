@@ -36,7 +36,6 @@ fi
 
 # OPTIONAL depending on kube-dns requirement
 # this for loop waits until the kubernetes addons are active
-kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:default
 KUBE_ADDONS_UP="false"
 for i in {1..150} # timeout for 5 minutes
 do
@@ -60,5 +59,3 @@ if [ "$KUBE_ADDONS_UP" != "true" ]; then
     exit 1
 fi
 # kube-addons is available for cluster services
-kubectl delete --namespace=kube-system deployment kube-dns
-sleep 30
