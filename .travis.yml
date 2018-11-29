@@ -8,19 +8,7 @@ env:
 before_install:
 - sudo apt-get update
 - sudo apt-get install socat
-# Download kubectl, which is a requirement for using minikube.
-- curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-# Download minikube.
-- curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.30.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
-- sudo minikube delete
-- sudo minikube start --memory 4096 --cpus 2 --vm-driver none --bootstrapper=kubeadm --kubernetes-version=v1.10.0 --apiserver-ips 127.0.0.1 --apiserver-name localhost
-# Fix the kubectl context, as it's often stale.
-- minikube update-context
-# Wait for Kubernetes to be up and ready.
-- JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
-- kubectl create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:kube-dns
-- sudo iptables -I INPUT -p tcp -j ACCEPT
-- sleep 100
+- ./travis-minikube-initialize.sh
 
 python:
   - '3.6'
