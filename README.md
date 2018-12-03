@@ -33,7 +33,13 @@ roleRef:
 
 ```
 
-Finally to deploy the membership-manager with `kubectl create -f manager-deployment.yaml` you have to edit the yaml file replacing the template variables (`<your-service-account>`, `<your-namespace>`) with the corresponding names in your setup.
+### Installation
+
+Finally to deploy the membership-manager with 
+```
+kubectl create -f manager-deployment.yaml
+``` 
+you have to edit the yaml file replacing the template variables (`<your-service-account>`, `<your-namespace>`) with the corresponding names in your setup.
 
 
 ### GKE
@@ -46,18 +52,30 @@ kubectl create clusterrolebinding <your--binding-name> --clusterrole=cluster-adm
 
 ## Manager Pod Environment Config
 
-The following environment variables are configurable on pod startup. Hereby the second parameter is automatically used as default if none is provided.
+The following environment variables are configurable on pod startup. Before the deployment you can set those in the `manager-deployment.yaml` file.
 
-```python
-    env["NAMESPACE"], # Namespace where the manager runs and the citus cluster is supposed to be
-    env.get("MASTER_LABEL", "citus-master"), # Label of the citus master pods
-    env.get("MASTER_SERVICE", "pg-citus-master"), # Service of the citus master pods
-    env.get("WORKER_LABEL", "citus-worker"), # Label of the citus worker pods
-    env.get("WORKER_SERVICE", "pg-citus-worker"), # Service of the citus master pods
-    env.get("PG_DB", "postgres"), # Database name for master node postgres
-    env.get("PG_USER", "postgres"), # Database user for master node postgres
-    int(env.get("PG_PORT", 5432)), # Database port for master node postgres
-    env.get("LOG_FILE", "manager.log"), # Log file name created in pod
+```yml
+env:
+- name: NAMESPACE
+  value: <your-namespace> # Namespace where the manager runs and the citus cluster is supposed to be
+- name: MASTER_LABEL
+  value: <default: citus-master> # Label of the citus master pods
+- name: MASTER_SERVICE
+  value: <default: pg-citus-master> # Service of the citus master pods
+- name: WORKER_LABEL
+  value: <default: citus-worker> # Label of the citus worker pods
+- name: WORKER_SERVICE
+  value: <default: pg-citus-worker> # Service of the citus worker pods
+- name: PG_DB
+  value: <default: postgres> # Database name for postgres db
+- name: PG_USER
+  value: <default: postgres> # Database user for postgres db
+- name: PG_PORT
+  value: <default: 5432> # Database port for postgres db
+- name: PG_PASSWORD
+  value: <default: None> # If present it is used for all the connections to the pg nodes
+- name: LOG_FILE
+  value: <default: manager.log> # Log file name created in pod
 ```
 
 ## Development
