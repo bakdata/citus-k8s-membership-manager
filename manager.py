@@ -28,7 +28,7 @@ log = logging.getLogger(__file__)
 
 
 @app.route("/registered")
-def registered_workers():
+def registered_workers() -> str:
     return json.dumps(list(citus_worker_nodes))
 
 
@@ -60,7 +60,9 @@ def loop() -> None:
 def add_pod(pod_name: str, citus_type: str) -> None:
     def master_handle() -> None:
         citus_master_nodes.add(pod_name)
-        # TODO: Handle new master registers
+        log.info("Registering new master %s", pod_name)
+        for worker_pod in citus_worker_nodes:
+            add_worker(worker_pod)
 
     def worker_handle() -> None:
         add_worker(pod_name)
@@ -100,20 +102,20 @@ def get_citus_type(pod: V1Pod) -> str:
 
 
 def add_worker(worker_name: str) -> None:
-    log.info("Found new worker: {}".format(worker_name))
+    log.info("Found new worker: %s", worker_name)
     citus_worker_nodes.add(worker_name)
     register_worker(worker_name)
 
 
 def remove_worker(worker_name: str) -> None:
-    log.info("Worker terminated: {}".format(worker_name))
+    log.info("Worker terminated: %s", worker_name)
     citus_worker_nodes.remove(worker_name)
     unregister_worker(worker_name)
 
 
 def register_worker(worker_name: str) -> None:
     exec_on_master("SELECT master_add_node(%(host)s, %(port)s)", worker_name)
-    log.info("Registered {}".format(worker_name))
+    log.info("Registered worker %s", worker_name)
 
 
 def unregister_worker(worker_name: str) -> None:
@@ -122,7 +124,7 @@ def unregister_worker(worker_name: str) -> None:
         SELECT master_remove_node(%(host)s, %(port)s)""",
         worker_name,
     )
-    log.info("Unregistered: {}".format(worker_name))
+    log.info("Unregistered: %s", worker_name)
 
 
 def exec_on_master(query: str, worker_name: str) -> None:
