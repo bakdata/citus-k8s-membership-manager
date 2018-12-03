@@ -26,6 +26,8 @@ logging.basicConfig(
 
 log = logging.getLogger(__file__)
 
+log.info("Environment Config: %s", conf)
+
 
 @app.route("/registered")
 def registered_workers():
@@ -130,17 +132,33 @@ def exec_on_master(query: str, worker_name: str) -> None:
         with connect_to_master(get_host_name(master, conf.master_service)) as conn:
             with conn.cursor() as cur:
                 worker_host = get_host_name(worker_name, conf.worker_service)
-                log.info("Registering host: %s", worker_host)
+                log.info(
+                    'Executing query "%s" on master with parameters: %s, %s',
+                    query,
+                    worker_host,
+                    conf.pg_port,
+                )
                 cur.execute(query, {"host": worker_host, "port": conf.pg_port})
         conn.close()
+
+
+def get_pg_connection_parameters() -> dict:
+    parameters = {
+        "dbname": conf.pg_db,
+        "user": conf.pg_user,
+        "password": conf.pg_password,
+    }
+    if not parameters["password"]:
+        parameters.pop("password")
+    return parameters
 
 
 @retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=10)
 def connect_to_master(host: str) -> psycopg2._psycopg.connection:
     log.info("Connecting to db master %s", host)
-    conn = psycopg2.connect(
-        "dbname={} user={} host={}".format(conf.pg_db, conf.pg_user, host)
-    )
+    parameters = get_pg_connection_parameters()
+    log.info("DB connection parameters %s", parameters)
+    conn = psycopg2.connect(**parameters, host=host)
     return conn
 
 
