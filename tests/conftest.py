@@ -16,6 +16,7 @@ from config import (
     MANAGER_DEPLOYMENT,
     SERVICE_ACCOUNT,
     MANAGER_NAME,
+    CONFIG_MAP,
 )
 
 VM_DRIVER = os.environ.get("DRIVER", None)
@@ -39,6 +40,20 @@ def namespace():
         body = client.V1DeleteOptions()
         client.CoreV1Api().delete_namespace(NAMESPACE, body)
         _set_context_namespace("default")
+
+
+@pytest.fixture(scope="session")
+def config_map(namespace):
+    core_api = client.CoreV1Api()
+    try:
+        log.info("Create config map")
+        path = YAML_DIR + "provision-map.yaml"
+        provision_conf = _parse_single_kubernetes_yaml(path)
+        yield core_api.create_namespaced_config_map(NAMESPACE, provision_conf)
+    finally:
+        log.info("Delete config map")
+        body = client.V1DeleteOptions()
+        core_api.delete_namespaced_config_map(CONFIG_MAP, NAMESPACE, body)
 
 
 @pytest.fixture(scope="session")

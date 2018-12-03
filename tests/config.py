@@ -10,3 +10,4 @@ POD_NAMES = [WORKER_NAME, MANAGER_NAME, MASTER_NAME]
 YAML_DIR = os.path.dirname(__file__) + "/test_yaml/"
 MANAGER_DEPLOYMENT = os.path.dirname(__file__) + "/../manager-deployment.yaml"
 SERVICE_ACCOUNT = "pod-listing-sa"
+CONFIG_MAP = "setup-config"
