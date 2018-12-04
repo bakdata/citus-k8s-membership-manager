@@ -74,13 +74,11 @@ def setup_cluster(kubernetes_client, manager_service_account):
         _capture_manager_output()
         kubernetes_client.create_namespaced_deployment(NAMESPACE, manager_conf)
 
-        citus_master = YAML_DIR + "citus-master.yaml"
-        _create_deployments(citus_master)
-        log.info("Wait until master is running")
-        time.sleep(3)  # TODO: wait until at least one master is running
-
         citus_worker = YAML_DIR + "citus-worker.yaml"
-        yield _create_deployments(citus_worker)
+        _create_deployments(citus_worker)
+
+        citus_master = YAML_DIR + "citus-master.yaml"
+        yield _create_deployments(citus_master)
     finally:
         _cleanup(kubernetes_client)
 
