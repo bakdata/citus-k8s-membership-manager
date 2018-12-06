@@ -26,7 +26,7 @@ def parse_env_vars() -> EnvConf:
         env.get("WORKER_SERVICE", "pg-citus-worker"),
         env.get("PG_DB", "postgres"),
         env.get("PG_USER", "postgres"),
-        env.get("PG_PW", ""),
+        env.get("PG_PASSWORD", ""),
         int(env.get("PG_PORT", 5432)),
         env.get("LOG_FILE", "manager.log"),
     )
