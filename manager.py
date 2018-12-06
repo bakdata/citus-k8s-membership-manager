@@ -29,6 +29,7 @@ class Manager:
         self.citus_master_nodes: typing.Set[str] = set()
         self.citus_worker_nodes: typing.Set[str] = set()
         self.start_web_server()
+        self.load_config_maps()
         self.pod_interactions: typing.Dict[
             str, typing.Dict[str, typing.Callable[[str], None]]
         ] = {
@@ -41,6 +42,16 @@ class Manager:
                 self.conf.worker_label: self.remove_worker,
             },
         }
+
+    def load_config_maps(self) -> typing.Tuple[typing.List[str], typing.List[str]]:
+        def read_config(path: str) -> typing.List["str"]:
+            with open(self.conf.master_provision_file, "r") as f:
+                return f.readlines()
+
+        return (
+            read_config(self.conf.master_provision_file),
+            read_config(self.conf.worker_provision_file),
+        )
 
     @staticmethod
     def get_citus_type(pod: V1Pod) -> str:

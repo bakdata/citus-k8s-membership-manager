@@ -9,15 +9,27 @@ import retrying
 import psycopg2
 
 from contextlib import contextmanager
-from config import NAMESPACE, PG_CONF, WORKER_NAME, MASTER_NAME
+from config import NAMESPACE, PG_CONF, WORKER_NAME, MASTER_NAME, WORKER_COUNT
 
 log = logging.getLogger(__file__)
 
 MAX_TIMEOUT = 30 * 1000
 
 
-def test_node_provisioning_with_configmap(config_map):
-    pass
+def test_node_provisioning_with_configmap():
+    query = "SELECT one();"
+
+    def check_query_result(pod_name: str) -> None:
+        with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
+            assert "1" == _run_local_query(query, 5435)
+
+    @retrying.retry(stop_max_delay=MAX_TIMEOUT, wait_fixed=1 * 1000)
+    def check_provisioning() -> None:
+        check_query_result(MASTER_NAME + "-0")
+        for i in range(WORKER_COUNT):
+            check_query_result(WORKER_NAME + "-{}".format(i))
+
+    check_provisioning()
 
 
 def test_initial_registration():
