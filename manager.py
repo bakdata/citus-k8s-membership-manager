@@ -155,7 +155,7 @@ def get_pg_connection_parameters() -> dict:
     return parameters
 
 
-@retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=10)
+@retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=15)
 def connect_to_master(host: str) -> psycopg2._psycopg.connection:
     log.info("Connecting to db master %s", host)
     parameters = get_pg_connection_parameters()
