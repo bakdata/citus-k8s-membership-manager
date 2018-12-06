@@ -16,6 +16,10 @@ log = logging.getLogger(__file__)
 MAX_TIMEOUT = 30 * 1000
 
 
+def test_node_provisioning_with_configmap(config_map):
+    pass
+
+
 def test_initial_registration():
     @retrying.retry(
         stop_max_delay=MAX_TIMEOUT,

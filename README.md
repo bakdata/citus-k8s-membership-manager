@@ -74,8 +74,6 @@ env:
   value: <default: 5432> # Database port for postgres db
 - name: PG_PASSWORD
   value: <default: None> # If present it is used for all the connections to the pg nodes
-- name: LOG_FILE
-  value: <default: manager.log> # Log file name created in pod
 ```
 
 ## Development
