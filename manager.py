@@ -9,9 +9,12 @@ from kubernetes.client import V1Pod
 from flask import Flask
 from threading import Thread
 from env_conf import parse_env_vars
+from db import DBHandler
 
 
 conf = parse_env_vars()
+db_handler = DBHandler(conf)
+
 
 citus_master_nodes: typing.Set[str] = set()
 citus_worker_nodes: typing.Set[str] = set()
@@ -112,12 +115,12 @@ def remove_worker(worker_name: str) -> None:
 
 
 def register_worker(worker_name: str) -> None:
-    exec_on_master("SELECT master_add_node(%(host)s, %(port)s)", worker_name)
+    exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", worker_name)
     log.info("Registered {}".format(worker_name))
 
 
 def unregister_worker(worker_name: str) -> None:
-    exec_on_master(
+    exec_on_masters(
         """DELETE FROM pg_dist_shard_placement WHERE nodename=%(host)s AND nodeport=%(port)s;
         SELECT master_remove_node(%(host)s, %(port)s)""",
         worker_name,
@@ -125,30 +128,11 @@ def unregister_worker(worker_name: str) -> None:
     log.info("Unregistered: {}".format(worker_name))
 
 
-def exec_on_master(query: str, worker_name: str) -> None:
+def exec_on_masters(query: str, worker_name: str) -> None:
     for master in citus_master_nodes:
-        with connect_to_master(get_host_name(master, conf.master_service)) as conn:
-            with conn.cursor() as cur:
-                worker_host = get_host_name(worker_name, conf.worker_service)
-                log.info("Registering host: %s", worker_host)
-                cur.execute(query, {"host": worker_host, "port": conf.pg_port})
-        conn.close()
-
-
-@retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=10)
-def connect_to_master(host: str) -> psycopg2._psycopg.connection:
-    log.info("Connecting to db master %s", host)
-    conn = psycopg2.connect(
-        "dbname={} user={} host={}".format(conf.pg_db, conf.pg_user, host)
-    )
-    return conn
-
-
-def get_host_name(pod_name: str, service_name: str) -> str:
-    host_pattern = "{pod_name}.{service_name}.{namespace}.svc.cluster.local"
-    return host_pattern.format(
-        pod_name=pod_name, namespace=conf.namespace, service_name=service_name
-    )
+        worker_host = db_handler.get_host_name(worker_name, conf.worker_service)
+        query_params = {"host": worker_host, "port": conf.pg_port}
+        db_handler.execute_query(master, conf.master_service, query, query_params)
 
 
 if __name__ == "__main__":
