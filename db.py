@@ -11,10 +11,19 @@ log = logging.getLogger(__file__)
 
 class DBHandler:
     def __init__(self, conf: EnvConf) -> None:
-        self.pg_db = conf.pg_db
-        self.pg_user = conf.pg_user
-        self.pg_port = conf.pg_port
+        self.pg_params = self.get_pg_connection_parameters(conf)
         self.namespace = conf.namespace
+
+    @staticmethod
+    def get_pg_connection_parameters(conf: EnvConf) -> dict:
+        parameters = {
+            "dbname": conf.pg_db,
+            "user": conf.pg_user,
+            "password": conf.pg_password,
+        }
+        if not parameters["password"]:
+            parameters.pop("password")
+        return parameters
 
     @contextmanager
     def _connect_to_db(
@@ -22,9 +31,7 @@ class DBHandler:
     ) -> typing.Iterator[psycopg2._psycopg.connection]:
         @retrying.retry(wait_fixed=5 * 1000, stop_max_attempt_number=10)
         def connector() -> psycopg2._psycopg.connection:
-            conn = psycopg2.connect(
-                "dbname={} user={} host={}".format(self.pg_db, self.pg_user, host)
-            )
+            conn = psycopg2.connect(**self.pg_params, host=host)
             return conn
 
         try:
