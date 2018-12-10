@@ -13,7 +13,7 @@ from config import NAMESPACE, PG_CONF, WORKER_NAME, MASTER_NAME, WORKER_COUNT
 
 log = logging.getLogger(__file__)
 
-MAX_TIMEOUT = 30 * 1000
+MAX_TIMEOUT = 60 * 1000
 
 
 def test_node_provisioning_with_configmap():
