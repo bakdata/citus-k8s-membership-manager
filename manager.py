@@ -29,7 +29,7 @@ class Manager:
         self.citus_master_nodes: typing.Set[str] = set()
         self.citus_worker_nodes: typing.Set[str] = set()
         self.start_web_server()
-        self.load_config_maps()
+        self.master_provision, self.worker_provision = self.load_config_maps()
         self.pod_interactions: typing.Dict[
             str, typing.Dict[str, typing.Callable[[str], None]]
         ] = {
@@ -94,8 +94,19 @@ class Manager:
 
         Thread(target=app.run).start()
 
+    def provision_node(
+        self, queries: typing.List[str], pod_name: str, service_name: str
+    ) -> None:
+        for query in queries:
+            try:
+                log.info("Running provision query on: %s", pod_name)
+                self.db_handler.execute_query(pod_name, service_name, query)
+            except Exception as e:
+                log.error("Error %s while executing provision query: %s", e, query)
+
     def add_master(self, pod_name: str) -> None:
         self.citus_master_nodes.add(pod_name)
+        self.provision_node(self.master_provision, pod_name, self.conf.master_service)
         log.info("Registering new master %s", pod_name)
         for worker_pod in self.citus_worker_nodes:
             self.add_worker(worker_pod)
@@ -104,8 +115,8 @@ class Manager:
         self.citus_master_nodes.remove(pod_name)
 
     def add_worker(self, pod_name: str) -> None:
-        log.info("Found new worker: %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
+        self.provision_node(self.worker_provision, pod_name, self.conf.worker_service)
         self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
         log.info("Registered worker %s", pod_name)
 

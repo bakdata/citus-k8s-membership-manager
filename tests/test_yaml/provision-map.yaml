@@ -3,10 +3,8 @@ metadata:
   name: setup-config
 data:
   master.setup: |
-    CREATE FUNCTION one() RETURNS integer
-    AS 'select 1;'
-    LANGUAGE SQL;
+    CREATE ERROR; |
+    CREATE FUNCTION one() RETURNS integer AS 'select 1;' LANGUAGE SQL;
   worker.setup: |
-    CREATE FUNCTION one() RETURNS integer
-    AS 'select 1;'
-    LANGUAGE SQL;
+    CREATE ERROR; |
+    CREATE FUNCTION one() RETURNS integer AS 'select 1;' LANGUAGE SQL;

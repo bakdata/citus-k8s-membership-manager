@@ -21,7 +21,7 @@ def test_node_provisioning_with_configmap():
 
     def check_query_result(pod_name: str) -> None:
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
-            assert "1" == _run_local_query(query, 5435)
+            assert 1 == _run_local_query(query, 5435)[0][0]
 
     @retrying.retry(stop_max_delay=MAX_TIMEOUT, wait_fixed=1 * 1000)
     def check_provisioning() -> None:
