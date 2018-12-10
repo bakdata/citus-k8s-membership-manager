@@ -1,4 +1,8 @@
 # citus-k8s-membership-manager
+[![Build Status](https://travis-ci.com/bakdata/citus-k8s-membership-manager.svg?branch=master)](https://travis-ci.com/bakdata/citus-k8s-membership-manager)
+[![Code Climate](https://codeclimate.com/github/bakdata/citus-k8s-membership-manager/badges/gpa.svg)](https://codeclimate.com/github/bakdata/citus-k8s-membership-manager)
+[![](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/bakdata/citus-k8s-membership-manager)
+
 
 This project implements the citus membership-manager for kubernetes. Currently, the membership-manager monitors the pods in the current namespace and registers or unregisters worker pods at the master node when they are added or removed.
 
