@@ -110,9 +110,20 @@ class PortForwarder:
         self, pod_name: str, port_mapping: typing.Tuple[int, int], namespace: str
     ) -> None:
         cmd = "kubectl port-forward {} {}:{} -n {}"
+        self.status_cmd = "kubectl get pods --all-namespaces | grep {}".format(pod_name)
+
         self.cmd = cmd.format(pod_name, port_mapping[0], port_mapping[1], namespace)
 
     def __enter__(self) -> None:
+        log.info(
+            "Pod status: %s",
+            subprocess.run(
+                [self.status_cmd],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+            ).stdout,
+        )
         self.pid = subprocess.Popen(self.cmd.split(" ")).pid
         time.sleep(1)  # Wait until port forwarding is established
         log.info("Port forwarding created with %s in process %s", self.cmd, self.pid)
