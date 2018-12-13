@@ -1,0 +1,10 @@
+apiVersion: v1
+metadata:
+  name: setup-config
+data:
+  master.setup: |
+    CREATE ERROR; |
+    CREATE FUNCTION one() RETURNS integer AS 'select 1;' LANGUAGE SQL;
+  worker.setup: |
+    CREATE ERROR; |
+    CREATE FUNCTION one() RETURNS integer AS 'select 1;' LANGUAGE SQL;

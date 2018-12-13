@@ -1,5 +1,9 @@
 import os
+import logging
+
 from dataclasses import dataclass
+
+log = logging.getLogger(__file__)
 
 
 @dataclass
@@ -13,12 +17,13 @@ class EnvConf:
     pg_user: str
     pg_password: str
     pg_port: int
-    log_file_name: str
+    master_provision_file: str
+    worker_provision_file: str
 
 
 def parse_env_vars() -> EnvConf:
     env = os.environ
-    return EnvConf(
+    conf = EnvConf(
         env["NAMESPACE"],
         env.get("MASTER_LABEL", "citus-master"),
         env.get("MASTER_SERVICE", "pg-citus-master"),
@@ -28,5 +33,8 @@ def parse_env_vars() -> EnvConf:
         env.get("PG_USER", "postgres"),
         env.get("PG_PASSWORD", ""),
         int(env.get("PG_PORT", 5432)),
-        env.get("LOG_FILE", "manager.log"),
+        env.get("MASTER_PROVISION_FILE", "/etc/config/master.setup"),
+        env.get("WORKER_PROVISION_FILE", "/etc/config/worker.setup"),
     )
+    log.info("Environment Config: %s", conf)
+    return conf

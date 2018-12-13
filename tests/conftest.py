@@ -16,6 +16,9 @@ from config import (
     MANAGER_DEPLOYMENT,
     SERVICE_ACCOUNT,
     MANAGER_NAME,
+    CONFIG_MAP,
+    CONFIG_PATH,
+    CONFIG_VOLUME,
 )
 
 VM_DRIVER = os.environ.get("DRIVER", None)
@@ -39,6 +42,20 @@ def namespace():
         body = client.V1DeleteOptions()
         client.CoreV1Api().delete_namespace(NAMESPACE, body)
         _set_context_namespace("default")
+
+
+@pytest.fixture(scope="session")
+def config_map(namespace):
+    core_api = client.CoreV1Api()
+    try:
+        log.info("Create config map")
+        path = YAML_DIR + "provision-map.yaml"
+        provision_conf = _parse_single_kubernetes_yaml(path)
+        yield core_api.create_namespaced_config_map(NAMESPACE, provision_conf)
+    finally:
+        log.info("Delete config map")
+        body = client.V1DeleteOptions()
+        core_api.delete_namespaced_config_map(CONFIG_MAP, NAMESPACE, body)
 
 
 @pytest.fixture(scope="session")
@@ -67,12 +84,13 @@ def kubernetes_client():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_cluster(kubernetes_client, manager_service_account):
+def setup_cluster(kubernetes_client, manager_service_account, config_map):
     try:
         manager_conf = _parse_single_kubernetes_yaml(MANAGER_DEPLOYMENT)
-        _configure_manager_container_template(manager_conf)
-        _capture_manager_output()
+        _configure_manager_pod_template(manager_conf)
+        log.info("Manager template: %s", manager_conf)
         kubernetes_client.create_namespaced_deployment(NAMESPACE, manager_conf)
+        _capture_manager_output()
 
         citus_worker = YAML_DIR + "citus-worker.yaml"
         _create_deployments(citus_worker)
@@ -83,13 +101,21 @@ def setup_cluster(kubernetes_client, manager_service_account):
         _cleanup(kubernetes_client)
 
 
-def _configure_manager_container_template(manager_conf: dict) -> None:
+def _configure_manager_pod_template(manager_conf: dict) -> None:
     template = manager_conf["spec"]["template"]["spec"]
     template["serviceAccountName"] = SERVICE_ACCOUNT
+
     template["containers"][0]["imagePullPolicy"] = "Never"
     template["containers"][0]["image"] = MANAGER_NAME
     template["containers"][0]["env"] = []
     template["containers"][0]["env"].append({"name": "NAMESPACE", "value": NAMESPACE})
+
+    template["containers"][0]["volumeMounts"][0]["name"] = CONFIG_VOLUME
+    template["containers"][0]["volumeMounts"][0]["mountPath"] = CONFIG_PATH
+
+    template["volumes"][0]["name"] = CONFIG_VOLUME
+    template["volumes"][0]["configMap"]["name"] = CONFIG_MAP
+
     manager_conf["spec"]["template"]["spec"] = template
 
 
