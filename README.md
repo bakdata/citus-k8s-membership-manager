@@ -4,7 +4,12 @@
 [![](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/bakdata/citus-k8s-membership-manager)
 
 
-This project implements the citus membership-manager for kubernetes. Currently, the membership-manager monitors the pods in the current namespace and registers or unregisters worker pods at the master node when they are added or removed.
+This project aims to provide a service which helps running PostgreSQL with the [Citus'](https://github.com/citusdata/citus) extension on kubernetes.
+
+Hereby, it supports the following features:
+
+- Register/unregister worker nodes on master during startup/teardown
+- Running provision scripts (SQL) on master/worker node startup
 
 ## Setup
 
