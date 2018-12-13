@@ -10,6 +10,7 @@ from flask import Flask
 from threading import Thread
 from env_conf import parse_env_vars
 from db import DBHandler
+from config_monitor import ConfigMonitor
 
 
 logging.basicConfig(
@@ -29,7 +30,6 @@ class Manager:
         self.citus_master_nodes: typing.Set[str] = set()
         self.citus_worker_nodes: typing.Set[str] = set()
         self.start_web_server()
-        self.master_provision, self.worker_provision = self.load_config_maps()
         self.pod_interactions: typing.Dict[
             str, typing.Dict[str, typing.Callable[[str], None]]
         ] = {
@@ -42,15 +42,8 @@ class Manager:
                 self.conf.worker_label: self.remove_worker,
             },
         }
-
-    def load_config_maps(self) -> typing.Tuple[typing.List[str], typing.List[str]]:
-        def read_config(path: str) -> typing.List["str"]:
-            with open(self.conf.master_provision_file, "r") as f:
-                return f.readlines()
-
-        return (
-            read_config(self.conf.master_provision_file),
-            read_config(self.conf.worker_provision_file),
+        self.config_monitor = ConfigMonitor(
+            self.conf, self.db_handler, self.citus_master_nodes, self.citus_worker_nodes
         )
 
     @staticmethod
@@ -94,19 +87,9 @@ class Manager:
 
         Thread(target=app.run).start()
 
-    def provision_node(
-        self, queries: typing.List[str], pod_name: str, service_name: str
-    ) -> None:
-        for query in queries:
-            try:
-                log.info("Running provision query on: %s", pod_name)
-                self.db_handler.execute_query(pod_name, service_name, query)
-            except Exception as e:
-                log.error("Error %s while executing provision query: %s", e, query)
-
     def add_master(self, pod_name: str) -> None:
         self.citus_master_nodes.add(pod_name)
-        self.provision_node(self.master_provision, pod_name, self.conf.master_service)
+        self.config_monitor.provision_master(pod_name)
         log.info("Registering new master %s", pod_name)
         for worker_pod in self.citus_worker_nodes:
             self.add_worker(worker_pod)
@@ -116,7 +99,7 @@ class Manager:
 
     def add_worker(self, pod_name: str) -> None:
         self.citus_worker_nodes.add(pod_name)
-        self.provision_node(self.worker_provision, pod_name, self.conf.worker_service)
+        self.config_monitor.provision_worker(pod_name)
         self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
         log.info("Registered worker %s", pod_name)
 
