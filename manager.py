@@ -106,7 +106,10 @@ class Manager:
 
     def add_master(self, pod_name: str) -> None:
         self.citus_master_nodes.add(pod_name)
-        self.provision_node(self.master_provision, pod_name, self.conf.master_service)
+        if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
+            self.provision_node(
+                self.master_provision, pod_name, self.conf.master_service
+            )
         log.info("Registering new master %s", pod_name)
         for worker_pod in self.citus_worker_nodes:
             self.add_worker(worker_pod)
@@ -116,7 +119,10 @@ class Manager:
 
     def add_worker(self, pod_name: str) -> None:
         self.citus_worker_nodes.add(pod_name)
-        self.provision_node(self.worker_provision, pod_name, self.conf.worker_service)
+        if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
+            self.provision_node(
+                self.worker_provision, pod_name, self.conf.worker_service
+            )
         self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
         log.info("Registered worker %s", pod_name)
 

@@ -19,6 +19,7 @@ class EnvConf:
     pg_port: int
     master_provision_file: str
     worker_provision_file: str
+    minimum_workers: int
 
 
 def parse_env_vars() -> EnvConf:
@@ -35,6 +36,7 @@ def parse_env_vars() -> EnvConf:
         int(env.get("PG_PORT", 5432)),
         env.get("MASTER_PROVISION_FILE", "/etc/config/master.setup"),
         env.get("WORKER_PROVISION_FILE", "/etc/config/worker.setup"),
+        int(env.get("MINIMUM_WORKERS", 0)),
     )
     log.info("Environment Config: %s", conf)
     return conf
