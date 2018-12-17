@@ -1,15 +1,10 @@
 import typing
-import subprocess
 import logging
-import os
-import signal
 import requests
-import time
 import retrying
-import psycopg2
 
-from contextlib import contextmanager
 from config import NAMESPACE, PG_CONF, WORKER_NAME, MASTER_NAME, WORKER_COUNT
+from util import run_local_query, PortForwarder
 
 log = logging.getLogger(__file__)
 
@@ -21,7 +16,7 @@ def test_node_provisioning_with_configmap():
 
     def check_query_result(pod_name: str) -> None:
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
-            assert 1 == _run_local_query(query, 5435)[0][0]
+            assert 1 == run_local_query(query, 5435)[0][0]
 
     @retrying.retry(stop_max_delay=MAX_TIMEOUT, wait_fixed=1 * 1000)
     def check_provisioning() -> None:
@@ -74,6 +69,7 @@ def test_unregister_worker(kubernetes_client):
 
 
 def test_node_provisioning_with_config_update():
+
     pass
 
 
@@ -86,51 +82,6 @@ def _get_workers_within_cluster() -> typing.List[str]:
 
 def _get_registered_workers() -> typing.List[typing.Tuple]:
     with PortForwarder(MASTER_NAME + "-0", (5435, 5432), NAMESPACE):
-        rows = _run_local_query("SELECT master_get_active_worker_nodes();", 5435)
+        rows = run_local_query("SELECT master_get_active_worker_nodes();", 5435)
         log.info("Currently registered worker nodes: %s", rows)
         return rows
-
-
-def _run_local_query(query: str, port: int) -> typing.List[typing.Tuple]:
-    with db_connector(port) as conn:
-        cursor = conn.cursor()
-        cursor.execute(query)
-        return cursor.fetchall()
-
-
-@contextmanager
-def db_connector(port: int) -> typing.Iterator[psycopg2._psycopg.connection]:
-    try:
-        conn = psycopg2.connect(
-            dbname=PG_CONF["db"], host="localhost", user=PG_CONF["user"], port=port
-        )
-        yield conn
-    finally:
-        conn.close()
-
-
-class PortForwarder:
-    def __init__(
-        self, pod_name: str, port_mapping: typing.Tuple[int, int], namespace: str
-    ) -> None:
-        cmd = "kubectl port-forward {} {}:{} -n {}"
-        self.status_cmd = "kubectl get pods --all-namespaces | grep {}".format(pod_name)
-
-        self.cmd = cmd.format(pod_name, port_mapping[0], port_mapping[1], namespace)
-
-    def __enter__(self) -> None:
-        log.info(
-            "Pod status: %s",
-            subprocess.run(
-                [self.status_cmd],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True,
-            ).stdout,
-        )
-        self.pid = subprocess.Popen(self.cmd.split(" ")).pid
-        time.sleep(1)  # Wait until port forwarding is established
-        log.info("Port forwarding created with %s in process %s", self.cmd, self.pid)
-
-    def __exit__(self, *args) -> None:
-        os.kill(self.pid, signal.SIGTERM)
