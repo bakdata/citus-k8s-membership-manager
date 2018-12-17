@@ -36,7 +36,11 @@ def stop_provisioning(kubernetes_client):
 
 
 def test_wait_for_workers_before_provisioning(stop_provisioning):
-    @retrying.retry(retry_on_exception=lambda e: isinstance(e, UnboundLocalError))
+    @retrying.retry(
+        stop_max_delay=MAX_TIMEOUT,
+        wait_fixed=1 * 1000,
+        retry_on_exception=lambda e: isinstance(e, UnboundLocalError),
+    )
     def check_provisioning(pod_name: str):
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
             with pytest.raises(psycopg2.ProgrammingError):
