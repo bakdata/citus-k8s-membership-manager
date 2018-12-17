@@ -46,7 +46,7 @@ class Manager:
 
     def load_config_maps(self) -> typing.Tuple[typing.List[str], typing.List[str]]:
         def read_config(path: str) -> typing.List["str"]:
-            with open(self.conf.master_provision_file, "r") as f:
+            with open(path, "r") as f:
                 return f.readlines()
 
         return (
