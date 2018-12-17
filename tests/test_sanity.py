@@ -18,7 +18,8 @@ log = logging.getLogger(__file__)
 MAX_TIMEOUT = 60 * 1000
 
 
-def test_wait_for_workers_before_provisioning(kubernetes_client):
+@pytest.fixture()
+def stop_provisioning(kubernetes_client):
     _scale_pod(WORKER_NAME, 1, kubernetes_client)
 
     def patch_pod(pod_name: str) -> None:
@@ -27,19 +28,22 @@ def test_wait_for_workers_before_provisioning(kubernetes_client):
     try:
         patch_pod(WORKER_NAME)
         patch_pod(MASTER_NAME)
+        time.sleep(10)  # Wait for pod readiness
     except client.rest.ApiException as e:
         log.error(e)
+    yield
+    _scale_pod(WORKER_NAME, 2, kubernetes_client)
 
+
+def test_wait_for_workers_before_provisioning(stop_provisioning):
     @retrying.retry(retry_on_exception=lambda e: isinstance(e, UnboundLocalError))
     def check_provisioning(pod_name: str):
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
             with pytest.raises(psycopg2.ProgrammingError):
                 _run_local_query("SELECT one();", 5435)
 
-    time.sleep(10)  # Wait for pod readiness
     check_provisioning(MASTER_NAME + "-0")
     check_provisioning(WORKER_NAME + "-0")
-    _scale_pod(WORKER_NAME, 2, kubernetes_client)
 
 
 def test_node_provisioning_with_configmap():
