@@ -20,9 +20,11 @@ class ConfigMonitor:
         self.master_service = conf.master_service
         self.worker_service = conf.worker_service
         self.db_handler = db_handler
-        self.master_provision, self.worker_provision = self.load_config_maps()
+
         self.workers = workers
         self.master = masters
+
+        self.master_provision, self.worker_provision = self.load_config_maps()
 
     def load_config_maps(self) -> typing.Tuple[typing.List[str], typing.List[str]]:
         def read_config(path: str) -> typing.List["str"]:

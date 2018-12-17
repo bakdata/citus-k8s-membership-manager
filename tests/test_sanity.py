@@ -73,6 +73,10 @@ def test_unregister_worker(kubernetes_client):
     check_state_after_scaling()
 
 
+def test_node_provisioning_with_config_update():
+    pass
+
+
 def _get_workers_within_cluster() -> typing.List[str]:
     with PortForwarder("deployment/citus-manager", (5000, 5000), NAMESPACE):
         response = requests.get("http://localhost:5000/registered").json()
