@@ -13,6 +13,7 @@ class DBHandler:
     def __init__(self, conf: EnvConf) -> None:
         self.pg_params = self.get_pg_connection_parameters(conf)
         self.namespace = conf.namespace
+        self.short_url = conf.short_url
 
     @staticmethod
     def get_pg_connection_parameters(conf: EnvConf) -> dict:
@@ -43,6 +44,9 @@ class DBHandler:
             connection.close()
 
     def get_host_name(self, pod_name: str, service_name: str) -> str:
+        if self.short_url:
+            host_pattern = "{pod_name}.{service_name}"
+            return host_pattern.format(pod_name=pod_name, service_name=service_name)
         host_pattern = "{pod_name}.{service_name}.{namespace}.svc.cluster.local"
         return host_pattern.format(
             pod_name=pod_name, namespace=self.namespace, service_name=service_name

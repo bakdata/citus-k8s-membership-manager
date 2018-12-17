@@ -83,6 +83,8 @@ env:
   value: <default: 5432> # Database port for postgres db
 - name: PG_PASSWORD
   value: <default: None> # If present it is used for all the connections to the pg nodes
+- name: SHORT_URL
+  value: <default: False> # If set {pod_name}.{service_name} is used as host pattern instead of {pod_name}.{service_name}.{namespace}.svc.cluster.local
 ```
 
 ## Development
