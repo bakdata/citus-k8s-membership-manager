@@ -37,9 +37,10 @@ def stop_provisioning(kubernetes_client):
 
 def test_wait_for_workers_before_provisioning(stop_provisioning):
     @retrying.retry(
-        stop_max_delay=MAX_TIMEOUT,
-        wait_fixed=1 * 1000,
-        retry_on_exception=lambda e: isinstance(e, UnboundLocalError),
+        stop_max_attempt_number=20,
+        wait_fixed=1000,
+        retry_on_exception=lambda e: isinstance(e, UnboundLocalError)
+        or isinstance(e, ProcessLookupError),
     )
     def check_provisioning(pod_name: str):
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
