@@ -90,6 +90,8 @@ env:
   value: <default: /etc/config/worker.setup> # File path for the worker provision script
 - name: MINIMUM_WORKERS
   value: <default: 0> # Threshold until the manager waits with node provisioning
+- name: SHORT_URL
+  value: <default: False> # If set {pod_name}.{service_name} is used as host pattern instead of {pod_name}.{service_name}.{namespace}.svc.cluster.local
 ```
 
 ## Development
