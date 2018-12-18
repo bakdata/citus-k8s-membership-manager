@@ -8,7 +8,6 @@ kubernetes = "*"
 flask = "*"
 retrying = "*"
 "psycopg2-binary" = "*"
-watchdog = "*"
 
 [dev-packages]
 mypy = "*"
