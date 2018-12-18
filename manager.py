@@ -43,8 +43,9 @@ class Manager:
             },
         }
         self.config_monitor = ConfigMonitor(
-            self.conf, self.db_handler, self.citus_master_nodes, self.citus_worker_nodes
+            self.conf, self.db_handler, self.citus_worker_nodes, self.citus_master_nodes
         )
+        self.config_monitor.start_watchers()
 
     @staticmethod
     def get_citus_type(pod: V1Pod) -> str:
