@@ -25,6 +25,7 @@ class Manager:
     def __init__(self) -> None:
         self.conf = parse_env_vars()
         self.db_handler = DBHandler(self.conf)
+        self.init_provision = False
 
         self.citus_master_nodes: typing.Set[str] = set()
         self.citus_worker_nodes: typing.Set[str] = set()
@@ -45,7 +46,7 @@ class Manager:
 
     def load_config_maps(self) -> typing.Tuple[typing.List[str], typing.List[str]]:
         def read_config(path: str) -> typing.List["str"]:
-            with open(self.conf.master_provision_file, "r") as f:
+            with open(path, "r") as f:
                 return f.readlines()
 
         return (
@@ -104,9 +105,19 @@ class Manager:
             except Exception as e:
                 log.error("Error %s while executing provision query: %s", e, query)
 
+    def provision_all_nodes(self) -> None:
+        log.info("Starting provision for all nodes")
+        for master in self.citus_master_nodes:
+            self.provision_node(self.master_provision, master, self.conf.master_service)
+        for worker in self.citus_worker_nodes:
+            self.provision_node(self.worker_provision, worker, self.conf.worker_service)
+
     def add_master(self, pod_name: str) -> None:
         self.citus_master_nodes.add(pod_name)
-        self.provision_node(self.master_provision, pod_name, self.conf.master_service)
+        if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
+            self.provision_node(
+                self.master_provision, pod_name, self.conf.master_service
+            )
         log.info("Registering new master %s", pod_name)
         for worker_pod in self.citus_worker_nodes:
             self.add_worker(worker_pod)
@@ -116,7 +127,16 @@ class Manager:
 
     def add_worker(self, pod_name: str) -> None:
         self.citus_worker_nodes.add(pod_name)
-        self.provision_node(self.worker_provision, pod_name, self.conf.worker_service)
+
+        if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
+            if not self.init_provision:
+                self.provision_all_nodes()
+                self.init_provision = True
+            else:
+                self.provision_node(
+                    self.worker_provision, pod_name, self.conf.worker_service
+                )
+
         self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
         log.info("Registered worker %s", pod_name)
 

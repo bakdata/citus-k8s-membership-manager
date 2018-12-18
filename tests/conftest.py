@@ -109,6 +109,7 @@ def _configure_manager_pod_template(manager_conf: dict) -> None:
     template["containers"][0]["image"] = MANAGER_NAME
     template["containers"][0]["env"] = []
     template["containers"][0]["env"].append({"name": "NAMESPACE", "value": NAMESPACE})
+    template["containers"][0]["env"].append({"name": "MINIMUM_WORKERS", "value": "2"})
     template["containers"][0]["env"].append({"name": "SHORT_URL", "value": "True"})
 
     template["containers"][0]["volumeMounts"][0]["name"] = CONFIG_VOLUME

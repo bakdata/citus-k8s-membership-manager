@@ -7,27 +7,62 @@ import requests
 import time
 import retrying
 import psycopg2
+import pytest
 
 from contextlib import contextmanager
 from config import NAMESPACE, PG_CONF, WORKER_NAME, MASTER_NAME, WORKER_COUNT
+from kubernetes import client
 
 log = logging.getLogger(__file__)
 
 MAX_TIMEOUT = 60 * 1000
 
 
-def test_node_provisioning_with_configmap():
-    query = "SELECT one();"
+@pytest.fixture()
+def stop_provisioning(kubernetes_client):
+    _scale_pod(WORKER_NAME, 1, kubernetes_client)
 
-    def check_query_result(pod_name: str) -> None:
+    def patch_pod(pod_name: str) -> None:
+        client.CoreV1Api().patch_namespaced_pod(pod_name, NAMESPACE, {})
+
+    try:
+        patch_pod(WORKER_NAME)
+        patch_pod(MASTER_NAME)
+        time.sleep(10)  # Wait for pod readiness
+    except client.rest.ApiException as e:
+        log.error(e)
+    yield
+    _scale_pod(WORKER_NAME, 2, kubernetes_client)
+
+
+def test_wait_for_workers_before_provisioning(stop_provisioning):
+    @retrying.retry(
+        stop_max_attempt_number=20,
+        wait_fixed=1000,
+        retry_on_exception=lambda e: isinstance(e, UnboundLocalError)
+        or isinstance(e, ProcessLookupError),
+    )
+    def check_provisioning(pod_name: str):
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
-            assert 1 == _run_local_query(query, 5435)[0][0]
+            with pytest.raises(psycopg2.ProgrammingError):
+                _run_local_query("SELECT one();", 5435)
+
+    check_provisioning(MASTER_NAME + "-0")
+    check_provisioning(WORKER_NAME + "-0")
+
+
+def test_node_provisioning_with_configmap():
+    def check_query_result(pod_name: str, query: str, result: int) -> None:
+        with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
+            assert result == _run_local_query(query, 5435)[0][0]
 
     @retrying.retry(stop_max_delay=MAX_TIMEOUT, wait_fixed=1 * 1000)
     def check_provisioning() -> None:
-        check_query_result(MASTER_NAME + "-0")
+        master_query = "SELECT one();"
+        check_query_result(MASTER_NAME + "-0", master_query, 1)
+        worker_query = "SELECT two();"
         for i in range(WORKER_COUNT):
-            check_query_result(WORKER_NAME + "-{}".format(i))
+            check_query_result(WORKER_NAME + "-{}".format(i), worker_query, 2)
 
     check_provisioning()
 
@@ -60,10 +95,7 @@ def test_db_master_knows_workers():
 
 
 def test_unregister_worker(kubernetes_client):
-    patch_body = {"spec": {"replicas": 1}}
-    kubernetes_client.patch_namespaced_stateful_set_scale(
-        WORKER_NAME, NAMESPACE, patch_body
-    )
+    _scale_pod(WORKER_NAME, 1, kubernetes_client)
 
     @retrying.retry(stop_max_delay=MAX_TIMEOUT, wait_fixed=1 * 1000)
     def check_state_after_scaling() -> None:
@@ -71,6 +103,13 @@ def test_unregister_worker(kubernetes_client):
         assert len(_get_registered_workers()) == 1
 
     check_state_after_scaling()
+
+
+def _scale_pod(pod_name: str, count: int, kubernetes_client: client.AppsV1Api) -> None:
+    patch_body = {"spec": {"replicas": count}}
+    kubernetes_client.patch_namespaced_stateful_set_scale(
+        WORKER_NAME, NAMESPACE, patch_body
+    )
 
 
 def _get_workers_within_cluster() -> typing.List[str]:
