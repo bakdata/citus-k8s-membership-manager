@@ -4,11 +4,12 @@
 [![](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/bakdata/citus-k8s-membership-manager)
 
 
-This project aims to provide a service which helps running PostgreSQL with the [Citus'](https://github.com/citusdata/citus) extension on kubernetes.
+This project aims to provide a service which helps running PostgreSQL with the [Citus](https://github.com/citusdata/citus) extension on kubernetes.
 
 Hereby, it supports the following features:
 
 - Register/unregister worker nodes on master during startup/teardown
+- Wait until worker threshold is reached before provisioning
 - Running provision scripts (SQL) on master/worker node startup
 
 ## Setup
@@ -83,6 +84,14 @@ env:
   value: <default: 5432> # Database port for postgres db
 - name: PG_PASSWORD
   value: <default: None> # If present it is used for all the connections to the pg nodes
+- name: MASTER_PROVISION_FILE
+  value: <default: /etc/config/master.setup> # File path for the master provision script
+- name: WORKER_PROVISION_FILE
+  value: <default: /etc/config/worker.setup> # File path for the worker provision script
+- name: MINIMUM_WORKERS
+  value: <default: 0> # Threshold until the manager waits with node provisioning
+- name: SHORT_URL
+  value: <default: False> # If set {pod_name}.{service_name} is used as host pattern instead of {pod_name}.{service_name}.{namespace}.svc.cluster.local
 ```
 
 ## Development

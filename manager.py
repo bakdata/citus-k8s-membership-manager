@@ -26,6 +26,7 @@ class Manager:
     def __init__(self) -> None:
         self.conf = parse_env_vars()
         self.db_handler = DBHandler(self.conf)
+        self.init_provision = False
 
         self.citus_master_nodes: typing.Set[str] = set()
         self.citus_worker_nodes: typing.Set[str] = set()
@@ -89,9 +90,10 @@ class Manager:
         Thread(target=app.run).start()
 
     def add_master(self, pod_name: str) -> None:
-        self.citus_master_nodes.add(pod_name)
-        self.config_monitor.provision_master(pod_name)
         log.info("Registering new master %s", pod_name)
+        self.citus_master_nodes.add(pod_name)
+        if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
+            self.config_monitor.provision_master(pod_name)
         for worker_pod in self.citus_worker_nodes:
             self.add_worker(worker_pod)
 
@@ -99,10 +101,16 @@ class Manager:
         self.citus_master_nodes.remove(pod_name)
 
     def add_worker(self, pod_name: str) -> None:
+        log.info("Registering new worker %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
-        self.config_monitor.provision_worker(pod_name)
+
+        if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
+            if not self.init_provision:
+                self.config_monitor.provision_all_nodes()
+                self.init_provision = True
+            else:
+                self.config_monitor.provision_worker(pod_name)
         self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
-        log.info("Registered worker %s", pod_name)
 
     def remove_worker(self, worker_name: str) -> None:
         log.info("Worker terminated: %s", worker_name)

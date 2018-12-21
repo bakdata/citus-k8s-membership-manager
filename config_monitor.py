@@ -54,6 +54,13 @@ class ConfigMonitor:
         worker_provision = self.load_config_map(self.worker_provision_path)
         self.provision_node(worker_provision, pod_name, self.worker_service)
 
+    def provision_all_nodes(self) -> None:
+        log.info("Starting provision for all nodes")
+        for master in self.masters:
+            self.provision_master(master)
+        for worker in self.workers:
+            self.provision_worker(worker)
+
     def provision_node(
         self, queries: typing.List[str], pod_name: str, service_name: str
     ) -> None:
