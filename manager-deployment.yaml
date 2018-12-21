@@ -15,7 +15,7 @@ spec:
       serviceAccountName: <your-service-account> 
       containers:
       - name: citus-manager-container
-        image: bakdata/citus-k8s-membership-manager:v0.1
+        image: bakdata/citus-k8s-membership-manager:v0.2
         imagePullPolicy: Always
         volumeMounts:
         - name: <your-volume-name>
