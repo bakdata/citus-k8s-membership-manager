@@ -10,6 +10,7 @@ from flask import Flask
 from threading import Thread
 from env_conf import parse_env_vars
 from db import DBHandler
+from config_monitor import ConfigMonitor
 
 
 logging.basicConfig(
@@ -30,7 +31,6 @@ class Manager:
         self.citus_master_nodes: typing.Set[str] = set()
         self.citus_worker_nodes: typing.Set[str] = set()
         self.start_web_server()
-        self.master_provision, self.worker_provision = self.load_config_maps()
         self.pod_interactions: typing.Dict[
             str, typing.Dict[str, typing.Callable[[str], None]]
         ] = {
@@ -43,16 +43,10 @@ class Manager:
                 self.conf.worker_label: self.remove_worker,
             },
         }
-
-    def load_config_maps(self) -> typing.Tuple[typing.List[str], typing.List[str]]:
-        def read_config(path: str) -> typing.List["str"]:
-            with open(path, "r") as f:
-                return f.readlines()
-
-        return (
-            read_config(self.conf.master_provision_file),
-            read_config(self.conf.worker_provision_file),
+        self.config_monitor = ConfigMonitor(
+            self.conf, self.db_handler, self.citus_worker_nodes, self.citus_master_nodes
         )
+        self.config_monitor.start_watchers()
 
     @staticmethod
     def get_citus_type(pod: V1Pod) -> str:
@@ -95,30 +89,11 @@ class Manager:
 
         Thread(target=app.run).start()
 
-    def provision_node(
-        self, queries: typing.List[str], pod_name: str, service_name: str
-    ) -> None:
-        for query in queries:
-            try:
-                log.info("Running provision query on: %s", pod_name)
-                self.db_handler.execute_query(pod_name, service_name, query)
-            except Exception as e:
-                log.error("Error %s while executing provision query: %s", e, query)
-
-    def provision_all_nodes(self) -> None:
-        log.info("Starting provision for all nodes")
-        for master in self.citus_master_nodes:
-            self.provision_node(self.master_provision, master, self.conf.master_service)
-        for worker in self.citus_worker_nodes:
-            self.provision_node(self.worker_provision, worker, self.conf.worker_service)
-
     def add_master(self, pod_name: str) -> None:
+        log.info("Registering new master %s", pod_name)
         self.citus_master_nodes.add(pod_name)
         if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
-            self.provision_node(
-                self.master_provision, pod_name, self.conf.master_service
-            )
-        log.info("Registering new master %s", pod_name)
+            self.config_monitor.provision_master(pod_name)
         for worker_pod in self.citus_worker_nodes:
             self.add_worker(worker_pod)
 
@@ -126,19 +101,16 @@ class Manager:
         self.citus_master_nodes.remove(pod_name)
 
     def add_worker(self, pod_name: str) -> None:
+        log.info("Registering new worker %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
 
         if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
             if not self.init_provision:
-                self.provision_all_nodes()
+                self.config_monitor.provision_all_nodes()
                 self.init_provision = True
             else:
-                self.provision_node(
-                    self.worker_provision, pod_name, self.conf.worker_service
-                )
-
+                self.config_monitor.provision_worker(pod_name)
         self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
-        log.info("Registered worker %s", pod_name)
 
     def remove_worker(self, worker_name: str) -> None:
         log.info("Worker terminated: %s", worker_name)

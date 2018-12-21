@@ -3,9 +3,7 @@ import logging
 import typing
 import pytest
 import os
-import subprocess
 import time
-import yaml
 
 from kubernetes import config, client
 from threading import Thread
@@ -20,6 +18,7 @@ from config import (
     CONFIG_PATH,
     CONFIG_VOLUME,
 )
+from util import run_kubectl_command, parse_single_kubernetes_yaml
 
 VM_DRIVER = os.environ.get("DRIVER", None)
 
@@ -50,7 +49,7 @@ def config_map(namespace):
     try:
         log.info("Create config map")
         path = YAML_DIR + "provision-map.yaml"
-        provision_conf = _parse_single_kubernetes_yaml(path)
+        provision_conf = parse_single_kubernetes_yaml(path)
         yield core_api.create_namespaced_config_map(NAMESPACE, provision_conf)
     finally:
         log.info("Delete config map")
@@ -65,7 +64,7 @@ def manager_service_account(kubernetes_client, namespace):
 
         def create_role_binding() -> None:
             cmd = "kubectl apply -f {}".format(path)
-            _run_kubectl_command(cmd)
+            run_kubectl_command(cmd)
 
         yield create_role_binding()
     finally:
@@ -86,7 +85,7 @@ def kubernetes_client():
 @pytest.fixture(scope="session", autouse=True)
 def setup_cluster(kubernetes_client, manager_service_account, config_map):
     try:
-        manager_conf = _parse_single_kubernetes_yaml(MANAGER_DEPLOYMENT)
+        manager_conf = parse_single_kubernetes_yaml(MANAGER_DEPLOYMENT)
         _configure_manager_pod_template(manager_conf)
         log.info("Manager template: %s", manager_conf)
         kubernetes_client.create_namespaced_deployment(NAMESPACE, manager_conf)
@@ -128,7 +127,7 @@ def _create_deployments(file_path: str) -> typing.Tuple[int, str, str]:
     cmd = "kubectl create -f {}".format(file_path)
     if VM_DRIVER:
         cmd = "eval $(minikube docker-env) && " + cmd
-    return _run_kubectl_command(cmd)
+    return run_kubectl_command(cmd)
 
 
 def _capture_manager_output() -> None:
@@ -136,7 +135,7 @@ def _capture_manager_output() -> None:
 
     def run():
         while True:
-            _run_kubectl_command(cmd)
+            run_kubectl_command(cmd)
             time.sleep(3)
 
     th = Thread(target=run)
@@ -144,30 +143,9 @@ def _capture_manager_output() -> None:
     th.start()
 
 
-def _parse_single_kubernetes_yaml(file_path: str) -> dict:
-    with open(file_path, "r") as f:
-        return yaml.load(f)
-
-
 def _set_context_namespace(namespace: str) -> typing.Tuple[int, str, str]:
     cmd = "kubectl config set-context $(kubectl config current-context) --namespace={}"
-    return _run_kubectl_command(cmd.format(namespace))
-
-
-def _run_kubectl_command(command: str) -> typing.Tuple[int, str, str]:
-    result = subprocess.run(
-        [command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-
-    def parse_output(output) -> str:
-        if not output:
-            return ""
-        return output.decode("utf-8").strip()
-
-    stdout = parse_output(result.stdout)
-    stderr = parse_output(result.stderr)
-    log.info("Command: %s, Stdout: %s, Stderr: %s", command, stdout, stderr)
-    return result.returncode, stdout, stderr
+    return run_kubectl_command(cmd.format(namespace))
 
 
 def _cleanup(k_client: client.AppsV1Api) -> None:

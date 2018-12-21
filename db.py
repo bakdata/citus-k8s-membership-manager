@@ -39,6 +39,9 @@ class DBHandler:
             connection = connector()
             log.info("Connected to pg db on: %s", host)
             yield connection
+        except Exception as e:
+            log.info(e)
+            log.info("Error while connecting to %s", host)
         finally:
             connection.commit()
             connection.close()
