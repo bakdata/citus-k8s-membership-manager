@@ -43,6 +43,13 @@ roleRef:
 
 ```
 
+- Create provisioning config map, as example see [tests/test\_yaml/provision-map.yaml](tests/test\_yaml/provision-map.yaml)
+- Add `citusType` label to master and worker nodes
+```
+kubectl patch statefulset  <statefulset-name> -n <namespace> --patch '{"spec": {"template": {"metadata": {"labels": {"citusType": <your-label>}}}}}'
+```
+
+
 ### Installation
 
 Finally to deploy the membership-manager with 
