@@ -15,8 +15,6 @@ from config import (
     SERVICE_ACCOUNT,
     MANAGER_NAME,
     CONFIG_MAP,
-    CONFIG_PATH,
-    CONFIG_VOLUME,
 )
 from util import run_kubectl_command, parse_single_kubernetes_yaml
 
@@ -111,10 +109,6 @@ def _configure_manager_pod_template(manager_conf: dict) -> None:
     template["containers"][0]["env"].append({"name": "MINIMUM_WORKERS", "value": "2"})
     template["containers"][0]["env"].append({"name": "SHORT_URL", "value": "True"})
 
-    template["containers"][0]["volumeMounts"][0]["name"] = CONFIG_VOLUME
-    template["containers"][0]["volumeMounts"][0]["mountPath"] = CONFIG_PATH
-
-    template["volumes"][0]["name"] = CONFIG_VOLUME
     template["volumes"][0]["configMap"]["name"] = CONFIG_MAP
 
     manager_conf["spec"]["template"]["spec"] = template

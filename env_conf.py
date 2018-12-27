@@ -35,8 +35,8 @@ def parse_env_vars() -> EnvConf:
         env.get("PG_USER", "postgres"),
         env.get("PG_PASSWORD", ""),
         int(env.get("PG_PORT", 5432)),
-        env.get("MASTER_PROVISION_FILE", "/etc/config/master.setup"),
-        env.get("WORKER_PROVISION_FILE", "/etc/config/worker.setup"),
+        env.get("MASTER_PROVISION_FILE", "/etc/citus-config/master.setup"),
+        env.get("WORKER_PROVISION_FILE", "/etc/citus-config/worker.setup"),
         int(env.get("MINIMUM_WORKERS", 0)),
         bool(env.get("SHORT_URL", False)),
     )
