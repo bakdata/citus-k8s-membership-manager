@@ -21,6 +21,7 @@ class EnvConf:
     worker_provision_file: str
     minimum_workers: int
     short_url: bool
+    ssl_mode: str
 
 
 def parse_env_vars() -> EnvConf:
@@ -39,6 +40,7 @@ def parse_env_vars() -> EnvConf:
         env.get("WORKER_PROVISION_FILE", "/etc/config/worker.setup"),
         int(env.get("MINIMUM_WORKERS", 0)),
         bool(env.get("SHORT_URL", False)),
+        env.get("SSL_MODE", ""),
     )
     log.info("Environment Config: %s", conf)
     return conf

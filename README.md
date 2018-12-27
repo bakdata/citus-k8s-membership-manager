@@ -99,6 +99,8 @@ env:
   value: <default: 0> # Threshold until the manager waits with node provisioning
 - name: SHORT_URL
   value: <default: False> # If set {pod_name}.{service_name} is used as host pattern instead of {pod_name}.{service_name}.{namespace}.svc.cluster.local
+- name: SSL_MODE
+  value: <default: None> # Supports PostgreSQL sslmodes https://www.postgresql.org/docs/current/libpq-ssl.html
 ```
 
 ## Development
