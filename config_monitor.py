@@ -16,11 +16,13 @@ class ConfigMonitor:
         self,
         conf: EnvConf,
         db_handler: DBHandler,
-        workers: typing.Set[str],
         masters: typing.Set[str],
+        workers: typing.Set[str],
+        master_provision_file: str,
+        worker_provision_file: str,
     ) -> None:
-        self.master_provision_path = conf.master_provision_file
-        self.worker_provision_path = conf.worker_provision_file
+        self.master_provision_path = master_provision_file
+        self.worker_provision_path = worker_provision_file
         self.master_service = conf.master_service
         self.worker_service = conf.worker_service
         self.db_handler = db_handler

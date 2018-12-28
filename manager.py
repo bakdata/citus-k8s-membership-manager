@@ -24,6 +24,8 @@ log = logging.getLogger(__file__)
 
 class Manager:
     def __init__(self) -> None:
+
+        config_path = "/etc/citus-config/"
         self.conf = parse_env_vars()
         self.db_handler = DBHandler(self.conf)
         self.init_provision = False
@@ -44,7 +46,12 @@ class Manager:
             },
         }
         self.config_monitor = ConfigMonitor(
-            self.conf, self.db_handler, self.citus_worker_nodes, self.citus_master_nodes
+            self.conf,
+            self.db_handler,
+            self.citus_master_nodes,
+            self.citus_worker_nodes,
+            config_path + "master.setup",
+            config_path + "worker.setup",
         )
         self.config_monitor.start_watchers()
 
