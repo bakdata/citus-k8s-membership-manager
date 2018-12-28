@@ -91,10 +91,6 @@ env:
   value: <default: 5432> # Database port for postgres db
 - name: PG_PASSWORD
   value: <default: None> # If present it is used for all the connections to the pg nodes
-- name: MASTER_PROVISION_FILE
-  value: <default: /etc/config/master.setup> # File path for the master provision script
-- name: WORKER_PROVISION_FILE
-  value: <default: /etc/config/worker.setup> # File path for the worker provision script
 - name: MINIMUM_WORKERS
   value: <default: 0> # Threshold until the manager waits with node provisioning
 - name: SHORT_URL
