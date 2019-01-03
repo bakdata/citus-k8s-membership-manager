@@ -26,6 +26,6 @@ COPY Pipfile.lock Pipfile.lock
 # -- Install dependencies:
 RUN set -ex && pipenv install --deploy --system
 
-COPY . /app
+COPY manager/ /app
 
 ENTRYPOINT ["python", "manager.py"]
