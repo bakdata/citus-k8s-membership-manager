@@ -12,6 +12,4 @@ YAML_DIR = os.path.dirname(__file__) + "/test_yaml/"
 MANAGER_DEPLOYMENT = os.path.dirname(__file__) + "/../manager-deployment.yaml"
 SERVICE_ACCOUNT = "pod-listing-sa"
 
-CONFIG_VOLUME = "config-volume"
 CONFIG_MAP = "setup-config"
-CONFIG_PATH = "/etc/config"

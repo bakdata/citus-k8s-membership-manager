@@ -18,8 +18,8 @@ spec:
         image: bakdata/citus-k8s-membership-manager:v0.2
         imagePullPolicy: Always
         volumeMounts:
-        - name: <your-volume-name>
-          mountPath: <your-config-path>
+        - name: citus-config-mount
+          mountPath: /etc/citus-config
         resources:
           requests:
             cpu: 100m
@@ -28,6 +28,6 @@ spec:
         - name: NAMESPACE
           value: <your-namespace> 
       volumes:
-      - name: <your-volume-name>
+      - name: citus-config-mount
         configMap:
           name: <your-config-map-name>
