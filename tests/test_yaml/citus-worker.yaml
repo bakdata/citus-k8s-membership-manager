@@ -41,3 +41,9 @@ spec:
         ports:
         - containerPort: 5432
           name: psql
+        #readinessProbe:
+          #exec:
+            #command:
+            #- echo
+            #- "test"
+          #initialDelaySeconds: 20

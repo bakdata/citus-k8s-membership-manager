@@ -40,6 +40,10 @@ def stop_provisioning(kubernetes_client):
     _scale_pod(WORKER_NAME, 2, kubernetes_client)
 
 
+def test_wait_for_worker_readiness():
+    pass
+
+
 def test_wait_for_workers_before_provisioning(stop_provisioning):
     @retrying.retry(
         stop_max_attempt_number=20,
@@ -141,7 +145,7 @@ def _scale_pod(pod_name: str, count: int, kubernetes_client: client.AppsV1Api) -
 
 def _get_workers_within_cluster() -> typing.List[str]:
     with PortForwarder("deployment/citus-manager", (5000, 5000), NAMESPACE):
-        response = requests.get("http://localhost:5000/registered").json()
+        response = requests.get("http://localhost:5000/registered").json()["workers"]
         log.info("Registered workers: %s", response)
     return response
 

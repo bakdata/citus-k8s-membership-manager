@@ -92,7 +92,11 @@ class Manager:
 
         @app.route("/registered")
         def registered_workers() -> str:
-            return json.dumps(list(self.citus_worker_nodes))
+            pods = {
+                "workers": list(self.citus_worker_nodes),
+                "masters": list(self.citus_master_nodes),
+            }
+            return json.dumps(pods)
 
         Thread(target=app.run).start()
 
