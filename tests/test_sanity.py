@@ -162,16 +162,19 @@ def _scale_pod(pod_name: str, count: int, kubernetes_client: client.AppsV1Api) -
 
 
 def _get_workers_within_cluster() -> typing.List[str]:
-    with PortForwarder("deployment/citus-manager", (5000, 5000), NAMESPACE):
-        response = requests.get("http://localhost:5000/registered").json()["workers"]
-        log.info("Registered workers: %s", response)
-    return response
+    return _request_registered_pods()["workers"]
 
 
 def _get_masters_within_cluster() -> typing.List[str]:
+    return _request_registered_pods()["masters"]
+
+
+@retrying.retry(stop_max_delay=MAX_TIMEOUT, wait_fixed=5 * 1000)
+def _request_registered_pods() -> typing.Dict[str, typing.List]:
     with PortForwarder("deployment/citus-manager", (5000, 5000), NAMESPACE):
-        response = requests.get("http://localhost:5000/registered").json()["masters"]
-        log.info("Registered masters: %s", response)
+        log.info("Request registered pods")
+        response = requests.get("http://localhost:5000/registered").json()
+        log.info("Registered pods: %s", response)
     return response
 
 

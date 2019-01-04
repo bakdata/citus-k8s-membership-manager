@@ -138,6 +138,7 @@ class Manager:
 
     def remove_master(self, pod_name: str) -> None:
         self.citus_master_nodes.discard(pod_name)
+        log.info("Unregistered: %s", pod_name)
 
     def add_worker(self, pod_name: str) -> None:
         try:
