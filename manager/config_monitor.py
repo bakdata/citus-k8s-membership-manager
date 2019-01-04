@@ -99,7 +99,7 @@ class FileWatcher:
                     self.current_hash = new_hash
                     self.updater()
                 else:
-                    log.info("No changes for %s", self.file_path)
+                    log.debug("No changes for %s", self.file_path)
                 time.sleep(5)
 
         Thread(target=run).start()

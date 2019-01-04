@@ -35,7 +35,7 @@ def stop_provisioning(kubernetes_client):
     _scale_pod(WORKER_NAME, 1, kubernetes_client)
     time.sleep(READINESS_WAIT + 10)  # Wait for pod readiness
     yield
-    _scale_pod(WORKER_NAME, 2, kubernetes_client)
+    _scale_pod(WORKER_NAME, WORKER_COUNT, kubernetes_client)
 
 
 @pytest.fixture()
@@ -47,6 +47,7 @@ def replace_citus_nodes(kubernetes_client):
     _scale_pod(WORKER_NAME, WORKER_COUNT, kubernetes_client)
     _scale_pod(MASTER_NAME, 1, kubernetes_client)
     yield
+    time.sleep(90)  # Wait for scale up
     time.sleep(READINESS_WAIT)  # Wait for readiness checks to be finished
 
 

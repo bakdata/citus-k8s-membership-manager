@@ -146,7 +146,6 @@ class Manager:
             log.info("Error while waiting for pod readiness: %s", pod_name)
             log.error(e)
             return
-        self.check_pod_readiness(pod_name)
         log.info("Registering new worker %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
 
