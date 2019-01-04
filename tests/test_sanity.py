@@ -15,6 +15,7 @@ from config import (
     YAML_DIR,
     CONFIG_MAP,
     MANAGER_DEPLOYMENT,
+    READINESS_WAIT,
 )
 from util import (
     run_local_query,
@@ -32,8 +33,7 @@ MAX_TIMEOUT = 60 * 1000
 @pytest.fixture()
 def stop_provisioning(kubernetes_client):
     _scale_pod(WORKER_NAME, 1, kubernetes_client)
-    time.sleep(30)  # Wait for pod readiness
-
+    time.sleep(READINESS_WAIT + 10)  # Wait for pod readiness
     yield
     _scale_pod(WORKER_NAME, 2, kubernetes_client)
 
@@ -43,11 +43,11 @@ def replace_citus_nodes(kubernetes_client):
     _scale_pod(WORKER_NAME, 0, kubernetes_client)
     _scale_pod(MASTER_NAME, 0, kubernetes_client)
     log.info("Wait for cluster scale down")
-    time.sleep(60)  # Wait for DELETED pod events
+    time.sleep(90)  # Wait for DELETED pod events
     _scale_pod(WORKER_NAME, WORKER_COUNT, kubernetes_client)
     _scale_pod(MASTER_NAME, 1, kubernetes_client)
     yield
-    time.sleep(20)  # Wait for readiness checks to be finished
+    time.sleep(READINESS_WAIT)  # Wait for readiness checks to be finished
 
 
 @pytest.mark.incremental
