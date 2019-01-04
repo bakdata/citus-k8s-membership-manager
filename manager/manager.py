@@ -15,7 +15,7 @@ from config_monitor import ConfigMonitor, PodMonitorConfig
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s %(message)s",
     handlers=[logging.StreamHandler()],
 )
