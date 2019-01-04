@@ -23,6 +23,10 @@ logging.basicConfig(
 log = logging.getLogger(__file__)
 
 
+class ReadinessError(Exception):
+    pass
+
+
 class Manager:
 
     config_path = "/etc/citus-config/"
@@ -94,20 +98,30 @@ class Manager:
             handler = self.pod_interactions[event_type]
             if citus_type not in handler:
                 log.error("Not recognized citus type %s", citus_type)
-            handler[citus_type](pod_name)
+            try:
+                handler[citus_type](pod_name)
+            except ReadinessError as e:
+                log.error(e)
 
-    @retrying.retry(
-        wait_fixed=5000,
-        retry_on_exception=lambda x: not isinstance(x, client.rest.ApiException),
-    )
     def check_pod_readiness(self, pod_name: str) -> None:
-        api = client.CoreV1Api()
-        pod = api.read_namespaced_pod_status(pod_name, self.conf.namespace)
-        status = pod.status
-        readiness = [state.ready for state in status.container_statuses]
-        log.info("Status: %s, %s", pod_name, readiness)
-        assert all(readiness)
-        log.info("Pod %s ready", pod_name)
+        @retrying.retry(
+            wait_fixed=5000,
+            retry_on_exception=lambda x: not isinstance(x, client.rest.ApiException),
+        )
+        def request_pod_readiness():
+            api = client.CoreV1Api()
+            pod = api.read_namespaced_pod_status(pod_name, self.conf.namespace)
+            status = pod.status
+            readiness = [state.ready for state in status.container_statuses]
+            log.info("Status: %s, %s", pod_name, readiness)
+            assert all(readiness)
+            log.info("Pod %s ready", pod_name)
+
+        try:
+            request_pod_readiness()
+        except client.rest.ApiException as e:
+            log.info("Error while waiting for pod readiness: %s", pod_name)
+            raise ReadinessError(e)
 
     def start_web_server(self) -> None:
         app = Flask(__name__)
@@ -123,12 +137,7 @@ class Manager:
         Thread(target=app.run).start()
 
     def add_master(self, pod_name: str) -> None:
-        try:
-            self.check_pod_readiness(pod_name)
-        except client.rest.ApiException as e:
-            log.info("Error while waiting for pod readiness: %s", pod_name)
-            log.error(e)
-            return
+        self.check_pod_readiness(pod_name)
         log.info("Registering new master %s", pod_name)
         self.citus_master_nodes.add(pod_name)
         if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
@@ -141,12 +150,7 @@ class Manager:
         log.info("Unregistered: %s", pod_name)
 
     def add_worker(self, pod_name: str) -> None:
-        try:
-            self.check_pod_readiness(pod_name)
-        except client.rest.ApiException as e:
-            log.info("Error while waiting for pod readiness: %s", pod_name)
-            log.error(e)
-            return
+        self.check_pod_readiness(pod_name)
         log.info("Registering new worker %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
 
