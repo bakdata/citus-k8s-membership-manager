@@ -14,8 +14,14 @@ from config import (
     WORKER_COUNT,
     YAML_DIR,
     CONFIG_MAP,
+    MANAGER_DEPLOYMENT,
 )
-from util import run_local_query, PortForwarder, parse_single_kubernetes_yaml
+from util import (
+    run_local_query,
+    PortForwarder,
+    parse_single_kubernetes_yaml,
+    run_kubectl_command,
+)
 from kubernetes import client
 
 log = logging.getLogger(__file__)
@@ -26,24 +32,25 @@ MAX_TIMEOUT = 60 * 1000
 @pytest.fixture()
 def stop_provisioning(kubernetes_client):
     _scale_pod(WORKER_NAME, 1, kubernetes_client)
+    time.sleep(30)  # Wait for pod readiness
 
-    def patch_pod(pod_name: str) -> None:
-        client.CoreV1Api().patch_namespaced_pod(pod_name, NAMESPACE, {})
-
-    try:
-        patch_pod(WORKER_NAME)
-        patch_pod(MASTER_NAME)
-        time.sleep(10)  # Wait for pod readiness
-    except client.rest.ApiException as e:
-        log.error(e)
     yield
     _scale_pod(WORKER_NAME, 2, kubernetes_client)
 
 
-def test_wait_for_worker_readiness():
-    pass
+@pytest.fixture()
+def replace_citus_nodes(kubernetes_client):
+    _scale_pod(WORKER_NAME, 0, kubernetes_client)
+    _scale_pod(MASTER_NAME, 0, kubernetes_client)
+    log.info("Wait for cluster scale down")
+    time.sleep(60)  # Wait for DELETED pod events
+    _scale_pod(WORKER_NAME, WORKER_COUNT, kubernetes_client)
+    _scale_pod(MASTER_NAME, 1, kubernetes_client)
+    yield
+    time.sleep(20)  # Wait for readiness checks to be finished
 
 
+@pytest.mark.incremental
 def test_wait_for_workers_before_provisioning(stop_provisioning):
     @retrying.retry(
         stop_max_attempt_number=20,
@@ -58,6 +65,12 @@ def test_wait_for_workers_before_provisioning(stop_provisioning):
 
     check_provisioning(MASTER_NAME + "-0")
     check_provisioning(WORKER_NAME + "-0")
+
+
+@pytest.mark.incremental
+def test_wait_for_worker_readiness(replace_citus_nodes):
+    assert len(_get_workers_within_cluster()) == 0
+    assert len(_get_masters_within_cluster()) == 0
 
 
 def test_node_provisioning_with_configmap():
@@ -137,16 +150,25 @@ def test_unregister_worker(kubernetes_client):
 
 
 def _scale_pod(pod_name: str, count: int, kubernetes_client: client.AppsV1Api) -> None:
+    log.info("Scale %s to %s", pod_name, count)
     patch_body = {"spec": {"replicas": count}}
-    kubernetes_client.patch_namespaced_stateful_set_scale(
-        WORKER_NAME, NAMESPACE, patch_body
+    resp = kubernetes_client.patch_namespaced_stateful_set_scale(
+        pod_name, NAMESPACE, patch_body
     )
+    log.info(resp)
 
 
 def _get_workers_within_cluster() -> typing.List[str]:
     with PortForwarder("deployment/citus-manager", (5000, 5000), NAMESPACE):
         response = requests.get("http://localhost:5000/registered").json()["workers"]
         log.info("Registered workers: %s", response)
+    return response
+
+
+def _get_masters_within_cluster() -> typing.List[str]:
+    with PortForwarder("deployment/citus-manager", (5000, 5000), NAMESPACE):
+        response = requests.get("http://localhost:5000/registered").json()["masters"]
+        log.info("Registered masters: %s", response)
     return response
 
 
