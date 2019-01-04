@@ -45,7 +45,7 @@ def replace_citus_nodes(kubernetes_client):
     time.sleep(60)  # Wait for DELETED pod events
     _scale_pod(MASTER_NAME, 0, kubernetes_client)
     log.info("Wait for master scale down")
-    time.sleep(30)
+    time.sleep(90)
     _scale_pod(WORKER_NAME, WORKER_COUNT, kubernetes_client)
     _scale_pod(MASTER_NAME, 1, kubernetes_client)
     yield
