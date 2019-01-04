@@ -3,6 +3,7 @@ import retrying
 import json
 import psycopg2
 import logging
+import retrying
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod
@@ -87,6 +88,19 @@ class Manager:
                 log.error("Not recognized citus type %s", citus_type)
             handler[citus_type](pod_name)
 
+    @retrying.retry(
+        wait_fixed=5000,
+        retry_on_exception=lambda x: not isinstance(x, client.rest.ApiException),
+    )
+    def check_pod_readiness(self, pod_name: str) -> None:
+        api = client.CoreV1Api()
+        pod = api.read_namespaced_pod_status(pod_name, self.conf.namespace)
+        status = pod.status
+        readiness = [state.ready for state in status.container_statuses]
+        log.info("Status: %s, %s", pod_name, readiness)
+        assert all(readiness)
+        log.info("Pod %s ready", pod_name)
+
     def start_web_server(self) -> None:
         app = Flask(__name__)
 
@@ -101,6 +115,12 @@ class Manager:
         Thread(target=app.run).start()
 
     def add_master(self, pod_name: str) -> None:
+        try:
+            self.check_pod_readiness(pod_name)
+        except client.rest.ApiException as e:
+            log.info("Error while waiting for pod readiness: %s", pod_name)
+            log.error(e)
+            return
         log.info("Registering new master %s", pod_name)
         self.citus_master_nodes.add(pod_name)
         if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
@@ -109,9 +129,16 @@ class Manager:
             self.add_worker(worker_pod)
 
     def remove_master(self, pod_name: str) -> None:
-        self.citus_master_nodes.remove(pod_name)
+        self.citus_master_nodes.discard(pod_name)
 
     def add_worker(self, pod_name: str) -> None:
+        try:
+            self.check_pod_readiness(pod_name)
+        except client.rest.ApiException as e:
+            log.info("Error while waiting for pod readiness: %s", pod_name)
+            log.error(e)
+            return
+        self.check_pod_readiness(pod_name)
         log.info("Registering new worker %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
 
@@ -125,7 +152,7 @@ class Manager:
 
     def remove_worker(self, worker_name: str) -> None:
         log.info("Worker terminated: %s", worker_name)
-        self.citus_worker_nodes.remove(worker_name)
+        self.citus_worker_nodes.discard(worker_name)
         self.exec_on_masters(
             """DELETE FROM pg_dist_shard_placement WHERE nodename=%(host)s AND nodeport=%(port)s;
             SELECT master_remove_node(%(host)s, %(port)s)""",

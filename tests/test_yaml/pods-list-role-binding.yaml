@@ -9,7 +9,7 @@ metadata:
   name: pods-list
 rules:
 - apiGroups: [""]
-  resources: ["pods"]
+  resources: ["pods", "pods/status"]
   verbs: ["get", "watch", "list"]
 ---
 kind: ClusterRoleBinding
