@@ -11,7 +11,7 @@ from flask import Flask
 from threading import Thread
 from env_conf import parse_env_vars
 from db import DBHandler
-from config_monitor import ConfigMonitor
+from config_monitor import ConfigMonitor, PodMonitorConfig
 
 
 logging.basicConfig(
@@ -24,9 +24,11 @@ log = logging.getLogger(__file__)
 
 
 class Manager:
+
+    config_path = "/etc/citus-config/"
+
     def __init__(self) -> None:
 
-        config_path = "/etc/citus-config/"
         self.conf = parse_env_vars()
         self.db_handler = DBHandler(self.conf)
         self.init_provision = False
@@ -46,15 +48,21 @@ class Manager:
                 self.conf.worker_label: self.remove_worker,
             },
         }
-        self.config_monitor = ConfigMonitor(
-            self.conf,
-            self.db_handler,
-            self.citus_master_nodes,
-            self.citus_worker_nodes,
-            config_path + "master.setup",
-            config_path + "worker.setup",
-        )
+        self.config_monitor = self.create_provision_monitor()
         self.config_monitor.start_watchers()
+
+    def create_provision_monitor(self) -> ConfigMonitor:
+        master_config = PodMonitorConfig(
+            self.citus_master_nodes,
+            self.config_path + "master.setup",
+            self.conf.master_service,
+        )
+        worker_config = PodMonitorConfig(
+            self.citus_worker_nodes,
+            self.config_path + "worker.setup",
+            self.conf.worker_service,
+        )
+        return ConfigMonitor(self.db_handler, master_config, worker_config)
 
     @staticmethod
     def get_citus_type(pod: V1Pod) -> str:

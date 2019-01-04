@@ -5,30 +5,35 @@ import time
 
 
 from threading import Thread
+from dataclasses import dataclass
 from env_conf import EnvConf
 from db import DBHandler
 
 log = logging.getLogger(__file__)
 
 
+@dataclass
+class PodMonitorConfig:
+    pod_names: typing.Set[str]
+    monitor_file: str
+    service_name: str
+
+
 class ConfigMonitor:
     def __init__(
         self,
-        conf: EnvConf,
         db_handler: DBHandler,
-        masters: typing.Set[str],
-        workers: typing.Set[str],
-        master_provision_file: str,
-        worker_provision_file: str,
+        master_config: PodMonitorConfig,
+        worker_config: PodMonitorConfig,
     ) -> None:
-        self.master_provision_path = master_provision_file
-        self.worker_provision_path = worker_provision_file
-        self.master_service = conf.master_service
-        self.worker_service = conf.worker_service
+        self.master_provision_path = master_config.monitor_file
+        self.worker_provision_path = worker_config.monitor_file
+        self.master_service = master_config.service_name
+        self.worker_service = worker_config.service_name
         self.db_handler = db_handler
 
-        self.workers = workers
-        self.masters = masters
+        self.workers = worker_config.pod_names
+        self.masters = master_config.pod_names
 
     @staticmethod
     def load_config_map(config_path: str) -> typing.List[str]:
