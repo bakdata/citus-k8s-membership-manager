@@ -36,7 +36,11 @@ class PortForwarder:
         self, pod_name: str, port_mapping: typing.Tuple[int, int], namespace: str
     ) -> None:
         cmd = "kubectl port-forward {} {}:{} -n {}"
-        self.status_cmd = "kubectl get pods --all-namespaces | grep {}".format(pod_name)
+        status_cmd_template = "kubectl get pods --all-namespaces | grep {}"
+        if "/" not in pod_name:
+            self.status_cmd = status_cmd_template.format(pod_name)
+        else:
+            self.status_cmd = status_cmd_template.format(pod_name.split("/")[1])
 
         self.cmd = cmd.format(pod_name, port_mapping[0], port_mapping[1], namespace)
 

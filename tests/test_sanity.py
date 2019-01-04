@@ -41,9 +41,11 @@ def stop_provisioning(kubernetes_client):
 @pytest.fixture()
 def replace_citus_nodes(kubernetes_client):
     _scale_pod(WORKER_NAME, 0, kubernetes_client)
+    log.info("Wait for worker scale down")
+    time.sleep(60)  # Wait for DELETED pod events
     _scale_pod(MASTER_NAME, 0, kubernetes_client)
-    log.info("Wait for cluster scale down")
-    time.sleep(90)  # Wait for DELETED pod events
+    log.info("Wait for master scale down")
+    time.sleep(30)
     _scale_pod(WORKER_NAME, WORKER_COUNT, kubernetes_client)
     _scale_pod(MASTER_NAME, 1, kubernetes_client)
     yield
