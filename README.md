@@ -61,11 +61,21 @@ kubectl patch statefulset  <statefulset-name> -n <namespace> --patch '{"spec": {
 
 ### Installation
 
-Finally to deploy the membership-manager with 
+Finally to deploy the membership-manager, you have to edit the yaml file replacing the template variables: 
+
+```
+<your-service-account>
+<your-namespace>
+<your-config-map-name>
+```
+
+with the corresponding names in your setup.
+
+Then you can run:
+
 ```
 kubectl create -f manager-deployment.yaml
 ``` 
-you have to edit the yaml file replacing the template variables (`<your-service-account>`, `<your-namespace>`) with the corresponding names in your setup.
 
 
 ### GKE
