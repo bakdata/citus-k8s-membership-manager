@@ -51,7 +51,9 @@ In addition to the service account, you also have to create a ConfigMap to provi
 
 ### Labels
 
-- Add `citusType` label to master and worker nodes
+We use pod labels to distinguish between worker and master nodes. Therefore you have to create a pod label called `citusType`.   
+Either you create your nodes accordingly to [tests/test\_yaml/citus-master.yaml](tests/test\_yaml/citus-master.yaml), [tests/test\_yaml/citus-worker.yaml](tests/test\_yaml/citus-worker.yaml) or you patch your existing cluster with the following command.
+
 ```
 kubectl patch statefulset  <statefulset-name> -n <namespace> --patch '{"spec": {"template": {"metadata": {"labels": {"citusType": <your-label>}}}}}'
 ```
