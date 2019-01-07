@@ -19,6 +19,7 @@ class EnvConf:
     pg_port: int
     minimum_workers: int
     short_url: bool
+    ssl_mode: str
 
 
 def parse_env_vars() -> EnvConf:
@@ -35,6 +36,7 @@ def parse_env_vars() -> EnvConf:
         int(env.get("PG_PORT", 5432)),
         int(env.get("MINIMUM_WORKERS", 0)),
         bool(env.get("SHORT_URL", False)),
+        env.get("SSL_MODE", ""),
     )
     log.info("Environment Config: %s", conf)
     return conf

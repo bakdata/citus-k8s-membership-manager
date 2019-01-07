@@ -21,9 +21,13 @@ class DBHandler:
             "dbname": conf.pg_db,
             "user": conf.pg_user,
             "password": conf.pg_password,
+            "sslmode": conf.ssl_mode,
         }
-        if not parameters["password"]:
-            parameters.pop("password")
+        optionals = ("password", "sslmode")
+        for option in optionals:
+            if parameters[option]:
+                continue
+            parameters.pop(option)
         return parameters
 
     @contextmanager
