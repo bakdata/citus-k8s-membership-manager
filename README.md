@@ -43,7 +43,14 @@ roleRef:
 
 ```
 
-- Create provisioning config map, as example see [tests/test\_yaml/provision-map.yaml](tests/test\_yaml/provision-map.yaml)
+### Provisioning
+
+In addition to the service account, you also have to create a ConfigMap to provision worker and master nodes. An example can be found here [tests/test\_yaml/provision-map.yaml](tests/test\_yaml/provision-map.yaml).
+
+**IMPORTANT:** Keep the same file structure with all its keys and only change the two value strings for `master.setup` and `worker.setup`. The membership-manager will check for these file names specifically.
+
+### Labels
+
 - Add `citusType` label to master and worker nodes
 ```
 kubectl patch statefulset  <statefulset-name> -n <namespace> --patch '{"spec": {"template": {"metadata": {"labels": {"citusType": <your-label>}}}}}'
