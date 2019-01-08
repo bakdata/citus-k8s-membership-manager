@@ -43,8 +43,17 @@ roleRef:
 
 ```
 
-- Create provisioning config map, as example see [tests/test\_yaml/provision-map.yaml](tests/test\_yaml/provision-map.yaml)
-- Add `citusType` label to master and worker nodes
+### Provisioning
+
+In addition to the service account, you also have to create a ConfigMap to provision worker and master nodes. An example can be found here [tests/test\_yaml/provision-map.yaml](tests/test\_yaml/provision-map.yaml).
+
+**IMPORTANT:** Keep the same file structure with all its keys and only change the two value strings for `master.setup` and `worker.setup`. The membership-manager will check for these file names specifically.
+
+### Labels
+
+We use pod labels to distinguish between worker and master nodes. Therefore you have to create a pod label called `citusType`.   
+Either you create your nodes accordingly to [tests/test\_yaml/citus-master.yaml](tests/test\_yaml/citus-master.yaml), [tests/test\_yaml/citus-worker.yaml](tests/test\_yaml/citus-worker.yaml) or you patch your existing cluster with the following command.
+
 ```
 kubectl patch statefulset  <statefulset-name> -n <namespace> --patch '{"spec": {"template": {"metadata": {"labels": {"citusType": <your-label>}}}}}'
 ```
@@ -52,11 +61,21 @@ kubectl patch statefulset  <statefulset-name> -n <namespace> --patch '{"spec": {
 
 ### Installation
 
-Finally to deploy the membership-manager with 
+Finally to deploy the membership-manager, you have to edit the yaml file replacing the template variables: 
+
+```
+<your-service-account>
+<your-namespace>
+<your-config-map-name>
+```
+
+with the corresponding names in your setup.
+
+Then you can run:
+
 ```
 kubectl create -f manager-deployment.yaml
 ``` 
-you have to edit the yaml file replacing the template variables (`<your-service-account>`, `<your-namespace>`) with the corresponding names in your setup.
 
 
 ### GKE
