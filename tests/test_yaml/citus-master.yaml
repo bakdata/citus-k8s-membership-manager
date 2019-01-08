@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: citus-master
-        image: citusdata/citus:7.5.1
+        image: citusdata/citus:8.1.0
         resources:
           requests:
             cpu: 200m 

@@ -76,8 +76,8 @@ class ConfigMonitor:
                 log.error("Error %s while executing provision query: %s", e, query)
 
     def start_watchers(self):
-        FileWatcher(self.update_workers, self.master_provision_path).start()
-        FileWatcher(self.update_masters, self.worker_provision_path).start()
+        FileWatcher(self.update_masters, self.master_provision_path).start()
+        FileWatcher(self.update_workers, self.worker_provision_path).start()
 
 
 class FileWatcher:

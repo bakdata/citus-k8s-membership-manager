@@ -4,8 +4,8 @@ metadata:
   name: setup-config
 data:
   master.setup: |
-    CREATE ERROR; |
+    CREATE ERROR;
     CREATE FUNCTION one() RETURNS integer AS 'select 1;' LANGUAGE SQL;
   worker.setup: |
-    CREATE ERROR; |
+    CREATE ERROR;
     CREATE FUNCTION two() RETURNS integer AS 'select 2;' LANGUAGE SQL;

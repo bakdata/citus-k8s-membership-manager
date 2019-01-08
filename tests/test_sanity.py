@@ -120,23 +120,31 @@ def test_db_master_knows_workers():
 
 
 def test_node_provisioning_with_config_update():
-    query = "CREATE FUNCTION three() RETURNS integer AS 'select 3;' LANGUAGE SQL;"
+    worker_query = (
+        "CREATE FUNCTION three() RETURNS integer AS 'select 3;' LANGUAGE SQL;"
+    )
+    master_query = "CREATE FUNCTION four() RETURNS integer AS 'select 4;' LANGUAGE SQL;"
     config_map = parse_single_kubernetes_yaml(YAML_DIR + "provision-map.yaml")
-    config_map["data"]["master.setup"] = query
-    config_map["data"]["worker.setup"] = query
+    config_map["data"]["master.setup"] = master_query
+    config_map["data"]["worker.setup"] = worker_query
     log.info("Updating config map: %s", config_map)
-    client.CoreV1Api().patch_namespaced_config_map(CONFIG_MAP, NAMESPACE, config_map)
+    log.info(
+        client.CoreV1Api().patch_namespaced_config_map(
+            CONFIG_MAP, NAMESPACE, config_map
+        )
+    )
+    master_test = "SELECT four();"
+    worker_test = "SELECT three();"
 
-    def check_query_result(pod_name: str) -> None:
-        test_query = "SELECT three();"
+    def check_query_result(pod_name: str, test_query: str, test_result: int) -> None:
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
-            assert 3 == run_local_query(test_query, 5435)[0][0]
+            assert test_result == run_local_query(test_query, 5435)[0][0]
 
     @retrying.retry(stop_max_delay=2 * MAX_TIMEOUT, wait_fixed=1 * 1000)
     def check_provisioning() -> None:
-        check_query_result(MASTER_NAME + "-0")
+        check_query_result(MASTER_NAME + "-0", master_test, 4)
         for i in range(WORKER_COUNT):
-            check_query_result(WORKER_NAME + "-{}".format(i))
+            check_query_result(WORKER_NAME + "-{}".format(i), worker_test, 3)
 
     check_provisioning()
 
