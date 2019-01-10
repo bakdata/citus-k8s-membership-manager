@@ -1,9 +1,7 @@
 import typing
 import retrying
 import json
-import psycopg2
 import logging
-import retrying
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod
