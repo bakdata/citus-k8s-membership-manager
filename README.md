@@ -14,34 +14,8 @@ Hereby, it supports the following features:
 
 ## Setup
 
-First, it is recommended to create a dedicated namespace for the membership-member or if your citus cluster is already running you can reuse this namespace. Furthermore, you have to create a service account allowing the membership-manager to list all pods in the current namespace.
-Once you have created the service account and have a namespace the following role and role binding need to be created:
-
-```yaml
-
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: pods-list
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "watch", "list"]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: pods-list
-subjects:
-- kind: ServiceAccount
-  name: <your-service-account-name>
-  namespace: <your-namespace>
-roleRef:
-  kind: ClusterRole
-  name: pods-list
-  apiGroup: rbac.authorization.k8s.io
-
-```
+First, it is recommended to create a dedicated namespace for the membership-member or if your citus cluster is already running you can reuse this namespace. Furthermore, you have to create a service account allowing the membership-manager to list all pods and their status in the current namespace.
+This service account and the needed privileges can be created according to [tests/test\_yaml/pods-list-role-binding.yaml](tests/test\_yaml/pods-list-role-binding.yaml)
 
 ### Provisioning
 
