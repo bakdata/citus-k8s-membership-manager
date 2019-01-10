@@ -6,7 +6,6 @@ import time
 
 from threading import Thread
 from dataclasses import dataclass
-from env_conf import EnvConf
 from db import DBHandler
 
 log = logging.getLogger(__file__)
