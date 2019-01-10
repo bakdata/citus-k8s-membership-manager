@@ -14,4 +14,5 @@ script:
   - 'pipenv install --dev'
   - 'docker build -t citus-manager .'
   - 'pipenv run flake8 --ignore=F403,E402 --max-line-length=88 manager/*'
+  - 'pipenv run mypy --ignore-missing-imports manager/*'
   - 'pipenv run pytest -vv -s'
