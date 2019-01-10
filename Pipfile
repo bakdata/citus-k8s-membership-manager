@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-kubernetes = "*"
+kubernetes = "==8.0.1"
 flask = "*"
 retrying = "*"
 "psycopg2-binary" = "*"
@@ -13,6 +13,7 @@ retrying = "*"
 mypy = "*"
 black = "==18.9b0"
 pytest = "*"
+"flake8" = "*"
 
 [requires]
 python_version = "3.7"

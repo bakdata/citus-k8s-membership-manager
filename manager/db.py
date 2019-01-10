@@ -60,8 +60,10 @@ class DBHandler:
         )
 
     def execute_query(
-        self, pod_name: str, service_name: str, query: str, query_params: dict = {}
+        self, pod_name: str, service_name: str, query: str, query_params: dict = None
     ) -> None:
+        if not query_params:
+            query_params = {}
         host = self.get_host_name(pod_name, service_name)
         with self._connect_to_db(host) as conn:
             with conn.cursor() as cur:

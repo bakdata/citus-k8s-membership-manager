@@ -13,4 +13,6 @@ script:
   - ./travis-minikube-initialize.sh
   - 'pipenv install --dev'
   - 'docker build -t citus-manager .'
+  - 'pipenv run flake8 --ignore=F403,E402,W503 --max-line-length=88 manager/* tests/*'
+  - 'pipenv run mypy --ignore-missing-imports manager/* tests/*.py'
   - 'pipenv run pytest -vv -s'

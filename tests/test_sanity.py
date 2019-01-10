@@ -8,21 +8,14 @@ import time
 
 from config import (
     NAMESPACE,
-    PG_CONF,
     WORKER_NAME,
     MASTER_NAME,
     WORKER_COUNT,
     YAML_DIR,
     CONFIG_MAP,
-    MANAGER_DEPLOYMENT,
     READINESS_WAIT,
 )
-from util import (
-    run_local_query,
-    PortForwarder,
-    parse_single_kubernetes_yaml,
-    run_kubectl_command,
-)
+from util import run_local_query, PortForwarder, parse_single_kubernetes_yaml
 from kubernetes import client
 
 log = logging.getLogger(__file__)

@@ -1,9 +1,7 @@
 import typing
 import retrying
 import json
-import psycopg2
 import logging
-import retrying
 
 from kubernetes import client, config, watch
 from kubernetes.client import V1Pod
@@ -83,16 +81,7 @@ class Manager:
         api = client.CoreV1Api()
         w = watch.Watch()
         for event in w.stream(api.list_namespaced_pod, self.conf.namespace):
-            event_type = event["type"]
-            pod = event["object"]
-            citus_type = self.get_citus_type(pod)
-            pod_name = pod.metadata.name
-            log.info(
-                "New event %s for pod %s with citus type %s",
-                event_type,
-                pod_name,
-                citus_type,
-            )
+            citus_type, pod_name, event_type = self.parse_event(event)
             if not citus_type or event_type not in self.pod_interactions:
                 continue
             handler = self.pod_interactions[event_type]
@@ -102,6 +91,19 @@ class Manager:
                 handler[citus_type](pod_name)
             except ReadinessError as e:
                 log.error(e)
+
+    def parse_event(self, event: dict) -> typing.Tuple[str, str, str]:
+        event_type = event["type"]
+        pod = event["object"]
+        citus_type = self.get_citus_type(pod)
+        pod_name = pod.metadata.name
+        log.info(
+            "New event %s for pod %s with citus type %s",
+            event_type,
+            pod_name,
+            citus_type,
+        )
+        return citus_type, pod_name, event_type
 
     def check_pod_readiness(self, pod_name: str) -> None:
         @retrying.retry(
