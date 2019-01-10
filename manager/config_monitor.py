@@ -88,20 +88,21 @@ class FileWatcher:
     def start(self) -> None:
         log.info("Start watcher for: %s", self.file_path)
 
-        def run():
+        def run() -> None:
             while True:
                 new_hash = self.get_file_hash(self.file_path)
-                if new_hash != self.current_hash:
-                    log.info(
-                        "File %s has changed starting provisioning", self.file_path
-                    )
-                    self.current_hash = new_hash
-                    self.updater()
-                else:
-                    log.debug("No changes for %s", self.file_path)
+                self.compare_hashs_for_update(new_hash)
                 time.sleep(5)
 
         Thread(target=run).start()
+
+    def compare_hashs_for_update(self, new_hash: bytes) -> None:
+        if new_hash != self.current_hash:
+            log.info("File %s has changed starting provisioning", self.file_path)
+            self.current_hash = new_hash
+            self.updater()
+        else:
+            log.debug("No changes for %s", self.file_path)
 
     @staticmethod
     def get_file_hash(path: str) -> bytes:
