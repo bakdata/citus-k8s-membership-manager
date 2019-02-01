@@ -156,13 +156,13 @@ class Manager:
         log.info("Registering new worker %s", pod_name)
         self.citus_worker_nodes.add(pod_name)
 
+        self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
         if len(self.citus_worker_nodes) >= self.conf.minimum_workers:
             if not self.init_provision:
                 self.config_monitor.provision_all_nodes()
                 self.init_provision = True
             else:
                 self.config_monitor.provision_worker(pod_name)
-        self.exec_on_masters("SELECT master_add_node(%(host)s, %(port)s)", pod_name)
 
     def remove_worker(self, worker_name: str) -> None:
         log.info("Worker terminated: %s", worker_name)
