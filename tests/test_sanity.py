@@ -69,6 +69,7 @@ def test_wait_for_worker_readiness(replace_citus_nodes):
     assert len(_get_masters_within_cluster()) == 0
 
 
+@pytest.mark.incremental
 def test_node_provisioning_with_configmap():
     def check_query_result(pod_name: str, query: str, result: int) -> None:
         with PortForwarder(pod_name, (5435, 5432), NAMESPACE):
@@ -85,6 +86,7 @@ def test_node_provisioning_with_configmap():
     check_provisioning()
 
 
+@pytest.mark.incremental
 def test_initial_registration():
     @retrying.retry(
         stop_max_delay=MAX_TIMEOUT,
@@ -98,6 +100,19 @@ def test_initial_registration():
         return _get_workers_within_cluster()
 
     assert set(registered_workers()) == set([WORKER_NAME + "-0", WORKER_NAME + "-1"])
+
+
+@pytest.mark.incremental
+def test_distributed_table_exists_on_all_workers():
+    schema = "public"
+    expected_table = "eventstore"
+
+    def match_tables(tables: typing.List[typing.Tuple]) -> None:
+        assert any(t[2].startswith(expected_table) for t in tables)
+
+    for i in range(WORKER_COUNT):
+        tables = _get_tables_in_schema(WORKER_NAME + "-{}".format(i), schema)
+        match_tables(tables)
 
 
 def test_db_master_knows_workers():
@@ -183,4 +198,14 @@ def _get_registered_workers() -> typing.List[typing.Tuple]:
     with PortForwarder(MASTER_NAME + "-0", (5435, 5432), NAMESPACE):
         rows = run_local_query("SELECT master_get_active_worker_nodes();", 5435)
         log.info("Currently registered worker nodes: %s", rows)
+        return rows
+
+
+def _get_tables_in_schema(pod_name: str, schema: str) -> typing.List[typing.Tuple]:
+    query = "SELECT * FROM information_schema.tables WHERE table_schema = '{}'".format(
+        schema
+    )
+    with PortForwarder(pod_name, (5436, 5432), NAMESPACE):
+        rows = run_local_query(query, 5436)
+        log.info("Current tables: %s in schema %s on %s", rows, schema, pod_name)
         return rows
