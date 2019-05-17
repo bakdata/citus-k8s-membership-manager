@@ -97,12 +97,13 @@ class Manager:
         pod = event["object"]
         citus_type = self.get_citus_type(pod)
         pod_name = pod.metadata.name
-        log.info(
-            "New event %s for pod %s with citus type %s",
-            event_type,
-            pod_name,
-            citus_type,
-        )
+        if citus_type:
+            log.info(
+                "New event %s for pod %s with citus type %s",
+                event_type,
+                pod_name,
+                citus_type,
+            )
         return citus_type, pod_name, event_type
 
     def check_pod_readiness(self, pod_name: str) -> None:
